@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>OrgPro</title>
+    <link rel="icon" type="image/x-icon" href="icono.ico">
+    <!-- SIN eel.js — pywebview inyecta su bridge automáticamente -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        :root { 
+            --bg-color: #f5efe6; 
+            --glass-bg: rgba(255, 252, 248, 0.9); 
+            --primary: #8b5a2b; 
+            --primary-hover: #a06b38; 
+            --success: #c49a6c; 
+            --text-main: #3e2723; 
+        }
+        
+        body { 
+            margin: 0; padding: 20px; 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #fdfbf7 0%, #e8dbce 100%); 
+            color: var(--text-main); 
+            min-height: 100vh; 
+            display: flex; justify-content: center; align-items: center; 
+            transition: background 0.4s ease; 
+        }
+        
+        .glass-container { 
+            background: var(--glass-bg); backdrop-filter: blur(15px); 
+            border: 1px solid rgba(139, 90, 43, 0.2); border-radius: 24px; 
+            padding: 40px; width: 100%; max-width: 650px; 
+            box-shadow: 0 20px 40px rgba(62, 39, 35, 0.1); 
+            position: relative; transition: all 0.4s ease; 
+        }
+        .glass-container.drag-over { 
+            border: 2px dashed var(--primary); 
+            background: rgba(139, 90, 43, 0.05); transform: scale(1.02); 
+        }
+        
+        .top-buttons { position: absolute; top: 20px; right: 25px; display: flex; gap: 12px; }
+        .action-btn { 
+            background: none; border: none; cursor: pointer; 
+            transition: 0.3s; opacity: 0.7; color: var(--primary); 
+            display: flex; align-items: center; justify-content: center; padding: 5px; 
+        }
+        .action-btn:hover { transform: scale(1.1); opacity: 1; }
+
+        header h1 { margin: 0; font-size: 2.2rem; font-weight: 800; color: var(--primary); text-align: center; }
+        
+        .control-panel { 
+            background: #fff; padding: 20px; border-radius: 15px; 
+            margin: 20px 0; border: 1px solid #eee; 
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .row-inputs { display: flex; gap: 10px; align-items: flex-end; }
+        .input-group { flex-grow: 1; display: flex; flex-direction: column; gap: 5px; }
+        
+        input[type="text"] { 
+            padding: 12px; border-radius: 8px; border: 1px solid #ddd; 
+            outline: none; font-size: 1rem; width: 100%; box-sizing: border-box; 
+        }
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        .api-key-input { 
+            padding: 8px; border-radius: 8px; border: 1px solid #ddd; 
+            outline: none; font-size: 1rem; flex: 1; box-sizing: border-box; 
+            -webkit-text-security: disc; font-family: 'Inter', sans-serif; 
+        }
+        .api-key-input:focus { border-color: var(--primary); }
+        
+        .switch-container { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #fdf5e6; padding: 12px 15px; border-radius: 8px; 
+            border: 1px solid rgba(139, 90, 43, 0.2); 
+        }
+        .switch-label { font-size: 0.9rem; font-weight: 600; color: var(--primary); display: flex; align-items: flex-start; gap: 8px; }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #a06b38; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .btn { padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; color: white; transition: 0.3s; }
+        .btn-p { background: var(--primary); }
+        .btn-p:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-s { background: var(--success); flex-grow: 1; font-size: 1.1rem; }
+        .btn-s:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-undo { 
+            background: #eaddd5; color: var(--primary); 
+            border: 1px solid rgba(139, 90, 43, 0.2); border-radius: 8px; 
+            width: 60px; display: flex; justify-content: center; align-items: center; 
+            cursor: pointer; transition: 0.3s; 
+        }
+        .btn-undo:hover { background: #dfcebf; transform: translateY(-2px); }
+        .btn-examinar { 
+            background: var(--primary); border: none; border-radius: 8px; 
+            padding: 12px 14px; cursor: pointer; color: white; font-size: 1rem; 
+            transition: 0.3s; white-space: nowrap; flex-shrink: 0; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-examinar:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        .preview-box { background: #fff; border: 1px solid #eee; border-radius: 12px; height: 180px; overflow-y: auto; padding: 15px; margin-bottom: 10px; }
+        .preview-list { list-style: none; padding: 0; margin: 0; }
+        .preview-list li { padding: 8px; border-bottom: 1px solid #f9f9f9; display: flex; justify-content: space-between; font-size: 0.9rem; }
+        .status-bar { background: #eaddd5; padding: 10px 15px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; }
+
+        /* BARRA DE PROGRESO */
+        .progress-wrapper { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .progress-track { background: #e0d0c1; border-radius: 99px; height: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--primary-hover)); transition: width 0.25s ease; position: relative; overflow: hidden; }
+        .progress-fill::after { content: ''; position: absolute; top: 0; left: -60%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); animation: shimmer 1.2s infinite; }
+        @keyframes shimmer { 0% { left: -60%; } 100% { left: 120%; } }
+        .progress-label { font-size: 0.78rem; font-weight: 600; color: var(--primary); text-align: right; }
+        .progress-wrapper.hidden { display: none !important; }
+
+        /* ESTADÍSTICAS */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+        .stat-card { background: #fdf5e6; border: 1px solid rgba(139, 90, 43, 0.15); border-radius: 12px; padding: 14px 10px; text-align: center; }
+        .stat-icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .stat-value { font-size: 1.3rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+        .stat-label { font-size: 0.72rem; color: #a07050; margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+
+        .watermark { position: fixed; bottom: 10px; right: 20px; font-size: 0.8rem; opacity: 0.5; font-weight: 800; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(62, 39, 35, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(3px); }
+        .modal-c { background: #fffcf8; padding: 30px; border-radius: 20px; max-width: 600px; width: 90%; position: relative; border: 1px solid rgba(139, 90, 43, 0.2); box-shadow: 0 15px 30px rgba(0,0,0,0.1); max-height: 85vh; overflow-y: auto; }
+        .hidden { display: none !important; }
+        .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.8rem; font-weight: bold; color: var(--primary); opacity: 0.5; cursor: pointer; transition: 0.3s; line-height: 1; }
+        .close-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        /* MODO OSCURO */
+        body.dark-mode { background: linear-gradient(135deg, #1a120b 0%, #2c1e14 100%); color: #f5efe6; }
+        body.dark-mode .glass-container { background: rgba(30, 20, 15, 0.95); border-color: rgba(212, 163, 115, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        body.dark-mode .control-panel, body.dark-mode .preview-box, body.dark-mode .stat-card { background: #231912; border-color: rgba(212, 163, 115, 0.2); }
+        body.dark-mode input[type="text"], body.dark-mode .api-key-input { background: #2c211a; color: #f5efe6; border-color: rgba(212, 163, 115, 0.2); }
+        body.dark-mode header h1, body.dark-mode .stat-value, body.dark-mode .action-btn { color: #d4a373; }
+        body.dark-mode .btn-p, body.dark-mode .btn-examinar { background: #d4a373; color: #1a120b; }
+        body.dark-mode .btn-p:hover, body.dark-mode .btn-examinar:hover { background: #e6b89c; }
+        body.dark-mode .btn-s { background: #8b5a2b; }
+        body.dark-mode .status-bar, body.dark-mode .btn-undo { background: #2c211a; border-color: rgba(212, 163, 115, 0.2); color: #d4a373; }
+        body.dark-mode .btn-undo:hover { background: #3e2f25; }
+        body.dark-mode .modal-c { background: #1a120b; border-color: rgba(212, 163, 115, 0.2); }
+        body.dark-mode .switch-container { background: #231912; border-color: rgba(212, 163, 115, 0.2); }
+        body.dark-mode .switch-label, body.dark-mode h2, body.dark-mode h3 { color: #d4a373; }
+        body.dark-mode .preview-list li { border-bottom: 1px solid #33261c; }
+        body.dark-mode .progress-track { background: #3e2f25; }
+        body.dark-mode .progress-label { color: #d4a373; }
+        body.dark-mode .stat-label { color: #a07050; }
+
+        /* TOASTS */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+        .toast { background: #fffcf8; border: 1px solid var(--primary); color: var(--text-main); padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; transform: translateX(150%); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        body.dark-mode .toast { background: #1a120b; border-color: #d4a373; color: #f5efe6; }
+    </style>
+</head>
+<body>
+    <div class="glass-container" id="drop-zone">
+        <div class="top-buttons">
+            <button class="action-btn" onclick="toggleDarkMode()" title="Cambiar Tema">
+                <svg id="theme-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></svg>
+            </button>
+            <button class="action-btn" onclick="toggleInfo()" title="Instrucciones">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </button>
+            <button class="action-btn" onclick="toggleConfig()" title="Configuración">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </div>
+
+        <header>
+            <h1>Organizador Inteligente</h1>
+            <p style="text-align: center; color: var(--primary); font-weight: 600;">Híbrido: Rápido & IA</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="row-inputs">
+                <div class="input-group">
+                    <label style="font-size: 0.8rem; font-weight: 600;">Ruta de la carpeta:</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="ruta" placeholder="Ej: C:\Usuarios\TuNombre\Descargas (o arrastra aquí)">
+                        <button class="btn-examinar" onclick="examinar()" title="Explorar carpetas">
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-p" onclick="abrirRenombrado()" title="Limpiar nombres con IA" style="display:flex; align-items:center; justify-content:center; padding: 12px; border-radius: 8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </button>
+                <button class="btn btn-p" onclick="analizar()" style="display:flex; align-items:center; gap:6px;">
+                    1. Analizar
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </button>
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <div class="switch-container" style="flex:1;">
+                    <span class="switch-label">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        <span>Análisis IA Profundo<br><small style="font-weight:normal; color:#888;">Útil para archivos raros.</small></span>
+                    </span>
+                    <label class="switch"><input type="checkbox" id="toggle-ia"><span class="slider"></span></label>
+                </div>
+                <div class="switch-container" style="flex:1;">
+                    <span class="switch-label">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path></svg>
+                        <span>Modo Fantasma<br><small style="font-weight:normal; color:#888;">Auto-organiza lo nuevo.</small></span>
+                    </span>
+                    <label class="switch"><input type="checkbox" id="toggle-fantasma" onchange="toggleModoFantasma()"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-box">
+            <ul id="lista" class="preview-list">
+                <li style="color:#999; justify-content:center; margin-top:50px;">Ingrese o arrastre una ruta para comenzar...</li>
+            </ul>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button id="btn-org" class="btn btn-s" onclick="organizar()" disabled style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                2. Confirmar y Organizar
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            </button>
+            <button class="btn-undo" onclick="showHistory()" title="Ver Historial">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </button>
+        </div>
+
+        <div id="progress-wrapper" class="progress-wrapper hidden">
+            <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+            <span id="progress-label" class="progress-label">0%</span>
+        </div>
+
+        <div class="status-bar" style="margin-top:10px;">
+            <span id="status">Listo para trabajar</span>
+            <span id="modo-badge" style="font-weight:800; color:var(--primary);"></span>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+    <div class="watermark">Software Por ©Chris</div>
+
+    <!-- MODAL INFO -->
+    <div id="m-info" class="modal hidden">
+        <div class="modal-c">
+            <button class="close-btn" onclick="toggleInfo()">&times;</button>
+            <h2 style="text-align:center; margin-top:0;">📖 Guía de Uso</h2>
+            <div style="background:#fdf5e6; padding:12px; border-radius:8px; border-left:4px solid var(--primary); margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:flex-start; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="flex-shrink:0; margin-top:2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    <div><strong>Modo Rápido:</strong> Organización instantánea con el diccionario de 120+ extensiones. Sin internet.</div>
+                </div>
+                <div style="display:flex; align-items:flex-start; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="flex-shrink:0; margin-top:2px;"><path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path></svg>
+                    <div><strong>Modo Fantasma:</strong> Actívalo y cierra la ventana. OrgPro vive en la bandeja del sistema y organiza cada archivo nuevo que aparezca en la carpeta vigilada.</div>
+                </div>
+                <div style="display:flex; align-items:flex-start; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="flex-shrink:0; margin-top:2px;"><rect x="5" y="2" width="14" height="20" rx="7"></rect><line x1="12" y1="6" x2="12" y2="10"></line></svg>
+                    <div><strong>Arrastrar y Soltar:</strong> Arrastra una carpeta desde el escritorio directamente sobre esta ventana.</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <h3 style="font-size:1rem; margin-bottom:5px;">🔑 API Key (Groq)</h3>
+                    <p style="font-size:0.85rem; color:#888; margin-top:0; line-height:1.4;">
+                        Regístrate en <a href="https://console.groq.com/keys" target="_blank" style="color:var(--primary); font-weight:bold;">console.groq.com</a>, genera una key y pégala en Ajustes (⚙️).
+                    </p>
+                </div>
+                <div style="flex:1;">
+                    <h3 style="font-size:1rem; margin-bottom:5px;">📐 Reglas Propias</h3>
+                    <p style="font-size:0.85rem; color:#888; margin-top:0; line-height:1.4;">
+                        En Ajustes (⚙️) añade reglas que tienen prioridad. Ej: <code>.pdf</code> ➔ <code>Universidad</code>.
+                    </p>
+                </div>
+            </div>
+            <button class="btn btn-p" onclick="toggleInfo()" style="width:100%; margin-top:15px;">Entendido, cerrar guía</button>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIG -->
+    <div id="m-conf" class="modal hidden">
+        <div class="modal-c">
+            <button class="close-btn" onclick="toggleConfig()">&times;</button>
+            <h2 style="text-align:center; margin-top:0;">⚙️ Ajustes Pro</h2>
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.85rem; font-weight:600;">API Key de Groq (para IA)</label>
+                <div style="display:flex; gap:8px; margin-top:5px;">
+                    <input type="text" id="api-key" class="api-key-input" placeholder="gsk_..." autocomplete="off">
+                    <button class="btn btn-p" onclick="saveApiKey()" style="padding:8px 12px;">Guardar</button>
+                </div>
+                <small style="color:#888; font-size:0.75rem; margin-top:4px; display:block;">🔒 Tu clave solo se guarda en este equipo.</small>
+            </div>
+            <hr style="border:0; border-top:1px solid rgba(139,90,43,0.2);">
+            <div style="margin-top:15px;">
+                <h3 style="font-size:0.95rem; margin-top:0;">Reglas Propias (Tienen Prioridad)</h3>
+                <div style="display:flex; gap:8px; margin-bottom:15px;">
+                    <input type="text" id="new-ext" placeholder=".pdf" style="flex:1; padding:8px;">
+                    <input type="text" id="new-folder" placeholder="Universidad" style="flex:2; padding:8px;">
+                    <button class="btn btn-p" onclick="addRule()" style="padding:8px 12px;">+</button>
+                </div>
+                <div style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.02); border-radius:8px; padding:10px; border:1px solid rgba(139,90,43,0.1);">
+                    <ul id="rules-list" style="list-style:none; padding:0; margin:0; font-size:0.8rem;"></ul>
+                </div>
+            </div>
+            <button class="btn btn-p" onclick="toggleConfig()" style="width:100%; margin-top:20px;">Cerrar Panel</button>
+        </div>
+    </div>
+
+    <!-- MODAL ÉXITO + ESTADÍSTICAS -->
+    <div id="m-ok" class="modal hidden">
+        <div class="modal-c" style="text-align:center; max-width:400px;">
+            <div style="font-size:3rem; margin-bottom:6px;">☕</div>
+            <h2 style="margin-top:0;">¡Magia Completada!</h2>
+            <p style="color:#888; font-size:0.88rem; margin:0 0 4px 0;">Resumen de la operación</p>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-value" id="stat-archivos">—</div><div class="stat-label">Archivos</div></div>
+                <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-value" id="stat-carpetas">—</div><div class="stat-label">Carpetas</div></div>
+                <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-value" id="stat-tamano">—</div><div class="stat-label">Procesado</div></div>
+            </div>
+            <button class="btn btn-p" onclick="location.reload()" style="margin-top:8px; width:100%;">Cerrar y Limpiar</button>
+        </div>
+    </div>
+
+    <!-- MODAL ALERTA -->
+    <div id="m-alert" class="modal hidden">
+        <div class="modal-c" style="text-align:center; max-width:350px;">
+            <h2 id="alert-title" style="margin-top:0;">Aviso</h2>
+            <p id="alert-msg" style="color:#888; font-size:0.95rem;"></p>
+            <button class="btn btn-p" onclick="closeCustomAlert()" style="margin-top:15px; width:100%;">Aceptar</button>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR -->
+    <div id="m-confirm" class="modal hidden">
+        <div class="modal-c" style="text-align:center; max-width:350px;">
+            <h2 id="confirm-title" style="margin-top:0;">Confirmar</h2>
+            <p id="confirm-msg" style="color:#888; font-size:0.95rem;"></p>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="btn-confirm-no" class="btn btn-undo" style="flex:1; width:auto;">Cancelar</button>
+                <button id="btn-confirm-yes" class="btn btn-p" style="flex:1;">Sí, continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL HISTORIAL -->
+    <div id="m-history" class="modal hidden">
+        <div class="modal-c" style="max-width:550px;">
+            <button class="close-btn" onclick="closeHistory()">&times;</button>
+            <h2 style="margin-top:0; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Historial de Sesión
+            </h2>
+            <p style="text-align:center; color:#888; font-size:0.85rem; margin-top:0;">Archivos organizados recientemente.</p>
+            <div class="preview-box" style="height:220px; margin-bottom:20px;">
+                <ul id="history-list" class="preview-list"></ul>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-undo" onclick="deshacer()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; width:auto;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                    Deshacer Todo
+                </button>
+                <button class="btn btn-p" onclick="closeHistory()" style="flex:1;">Cerrar Panel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RENOMBRADO -->
+    <div id="m-rename" class="modal hidden">
+        <div class="modal-c" style="max-width:550px;">
+            <button class="close-btn" onclick="closeRename()">&times;</button>
+            <h2 style="margin-top:0; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                Limpieza de Nombres
+            </h2>
+            <p style="text-align:center; color:#888; font-size:0.85rem; margin-top:0;">La IA sugiere estos nombres. Desmarca los que no quieras cambiar.</p>
+            <div class="preview-box" style="height:250px; margin-bottom:20px;">
+                <ul id="rename-list" class="preview-list"></ul>
+            </div>
+            <button class="btn btn-p" onclick="aplicarRenombres()" style="width:100%;">Aplicar Cambios 🪄</button>
+        </div>
+    </div>
+
+    <script>
+        // ── Esperar a que el bridge de pywebview esté listo ─────────────────────
+        function apiLista() {
+            return new Promise(resolve => {
+                if (window.pywebview && window.pywebview.api) {
+                    resolve();
+                } else {
+                    window.addEventListener('pywebviewready', resolve, { once: true });
+                }
+            });
+        }
+
+        const statusEl        = document.getElementById('status');
+        const progressWrapper = document.getElementById('progress-wrapper');
+        const progressFill    = document.getElementById('progress-fill');
+        const progressLabel   = document.getElementById('progress-label');
+        let planActual = null;
+
+        // ── Barra de progreso ────────────────────────────────────────────────────
+        function setProgreso(p) { progressFill.style.width = p + '%'; progressLabel.innerText = Math.round(p) + '%'; }
+        function mostrarBarra() { setProgreso(0); progressWrapper.classList.remove('hidden'); }
+        function ocultarBarra() { setProgreso(100); setTimeout(() => progressWrapper.classList.add('hidden'), 700); }
+
+        // ── Modales genéricos ────────────────────────────────────────────────────
+        window.onclick = function(e) {
+            if (e.target.classList.contains('modal') && e.target.id !== 'm-confirm')
+                e.target.classList.add('hidden');
+        }
+        function showCustomAlert(title, message) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText   = message;
+            document.getElementById('m-alert').classList.remove('hidden');
+        }
+        function closeCustomAlert() { document.getElementById('m-alert').classList.add('hidden'); }
+        function showCustomConfirm(title, message) {
+            return new Promise(resolve => {
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-msg').innerText   = message;
+                const modal = document.getElementById('m-confirm');
+                modal.classList.remove('hidden');
+                document.getElementById('btn-confirm-yes').onclick = () => { modal.classList.add('hidden'); resolve(true);  };
+                document.getElementById('btn-confirm-no').onclick  = () => { modal.classList.add('hidden'); resolve(false); };
+            });
+        }
+
+        // ── Config y tema ────────────────────────────────────────────────────────
+        function toggleInfo() { document.getElementById('m-info').classList.toggle('hidden'); }
+
+        async function toggleConfig() {
+            const m = document.getElementById('m-conf');
+            if (m.classList.contains('hidden')) {
+                const config = await window.pywebview.api.obtener_config();
+                document.getElementById('api-key').value = config.api_key || '';
+                renderRulesList(config.rules || {});
+            }
+            m.classList.toggle('hidden');
+        }
+        async function saveApiKey() {
+            const key = document.getElementById('api-key').value.trim();
+            await window.pywebview.api.guardar_api_key(key);
+            showCustomAlert("¡Listo!", "API Key guardada correctamente.");
+        }
+        function renderRulesList(rules) {
+            const list = document.getElementById('rules-list');
+            list.innerHTML = Object.keys(rules).length ? '' : '<li style="color:#aaa;text-align:center;">Sin reglas propias.</li>';
+            for (const [ext, folder] of Object.entries(rules)) {
+                list.innerHTML += `<li style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid rgba(139,90,43,0.1);"><span><b>${ext}</b> ➔ ${folder}</span><button onclick="deleteRule('${ext}')" style="color:#e53e3e; border:none; background:none; cursor:pointer; font-weight:bold;">×</button></li>`;
+            }
+        }
+        async function addRule() {
+            const ext    = document.getElementById('new-ext').value.trim();
+            const folder = document.getElementById('new-folder').value.trim();
+            if (ext && folder) {
+                const config = await window.pywebview.api.guardar_regla_usuario(ext, folder);
+                document.getElementById('new-ext').value = '';
+                document.getElementById('new-folder').value = '';
+                renderRulesList(config.rules || {});
+            }
+        }
+        async function deleteRule(ext) {
+            const config = await window.pywebview.api.borrar_regla_usuario(ext);
+            renderRulesList(config.rules || {});
+        }
+
+        // ── Tema oscuro ──────────────────────────────────────────────────────────
+        let isDarkMode = false;
+        async function initTheme() {
+            const config = await window.pywebview.api.obtener_config();
+            if (config.dark_mode) {
+                document.body.classList.add('dark-mode');
+                isDarkMode = true;
+            }
+            updateThemeIcon();
+        }
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+            window.pywebview.api.guardar_dark_mode(isDarkMode);
+            updateThemeIcon();
+        }
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-icon');
+            icon.innerHTML = isDarkMode
+                ? '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>'
+                : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        }
+
+        // ── Examinar ─────────────────────────────────────────────────────────────
+        async function examinar() {
+            const carpeta = await window.pywebview.api.seleccionar_carpeta();
+            if (carpeta) {
+                document.getElementById('ruta').value = carpeta;
+                statusEl.innerText = "Carpeta lista.";
+            }
+        }
+
+        // ── Analizar ─────────────────────────────────────────────────────────────
+        async function analizar() {
+            const ruta   = document.getElementById('ruta').value.trim();
+            const usarIA = document.getElementById('toggle-ia').checked;
+            if (!ruta) return;
+            statusEl.innerText = "Analizando...";
+            const res = await window.pywebview.api.analizar_archivos(ruta, usarIA);
+            if (res.status === "success") {
+                planActual = res.plan;
+                const l = document.getElementById('lista');
+                l.innerHTML = '';
+                for (const [a, c] of Object.entries(planActual))
+                    l.innerHTML += `<li><span>📄 ${a}</span> <b>➔ 📁 ${c}</b></li>`;
+                document.getElementById('btn-org').disabled = false;
+                statusEl.innerText = `Análisis completo (${res.modo}).`;
+            } else {
+                showCustomAlert("Error en Análisis", res.message);
+                statusEl.innerText = "Fallo.";
+            }
+        }
+
+        // ── Organizar ────────────────────────────────────────────────────────────
+        async function organizar() {
+            mostrarBarra();
+            statusEl.innerText = "Organizando...";
+            document.getElementById('btn-org').disabled = true;
+            const res = await window.pywebview.api.organizar_archivos(
+                document.getElementById('ruta').value, planActual
+            );
+            if (res.status === "success") {
+                ocultarBarra();
+                document.getElementById('stat-archivos').innerText = res.stats.archivos;
+                document.getElementById('stat-carpetas').innerText = res.stats.carpetas;
+                document.getElementById('stat-tamano').innerText   = res.stats.tamano;
+                document.getElementById('m-ok').classList.remove('hidden');
+            }
+        }
+
+        // ── Historial ────────────────────────────────────────────────────────────
+        async function showHistory() {
+            const ruta = document.getElementById('ruta').value.trim();
+            if (!ruta) { showCustomAlert("Aviso", "Primero selecciona una ruta."); return; }
+            const res  = await window.pywebview.api.obtener_historial(ruta);
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            if (res.status === "success" && Object.keys(res.data).length > 0) {
+                for (const [rutaActual] of Object.entries(res.data)) {
+                    const partes = rutaActual.replace(/\\/g, '/').split('/');
+                    const nombre  = partes.pop();
+                    const carpeta = partes.pop();
+                    list.innerHTML += `<li><span style="font-weight:600;">📄 ${nombre}</span><span style="color:var(--primary);">➔ 📁 ${carpeta}</span></li>`;
+                }
+                document.getElementById('m-history').classList.remove('hidden');
+            } else {
+                showCustomAlert("Historial Vacío", res.message || "No hay registros recientes.");
+            }
+        }
+        function closeHistory() { document.getElementById('m-history').classList.add('hidden'); }
+
+        async function deshacer() {
+            closeHistory();
+            const ok = await showCustomConfirm("Botón del Pánico", "¿Deshacer los últimos cambios?");
+            if (ok) {
+                statusEl.innerText = "Deshaciendo...";
+                const res = await window.pywebview.api.deshacer_organizacion(document.getElementById('ruta').value);
+                if (res.status === "success") {
+                    showCustomAlert("¡Rebobinado!", "Archivos regresados.");
+                    setTimeout(() => location.reload(), 2500);
+                } else {
+                    showCustomAlert("Error", res.message);
+                }
+            }
+        }
+
+        // ── Progreso (llamado desde Python via evaluate_js) ──────────────────────
+        function actualizarProgreso(p) { setProgreso(p); statusEl.innerText = `Procesando: ${Math.round(p)}%`; }
+
+        // ── Tema ─────────────────────────────────────────────────────────────────
+        async function initFantasma() {
+            const res = await window.pywebview.api.estado_fantasma();
+            const chk = document.getElementById('toggle-fantasma');
+            if (chk) chk.checked = res.activo;
+            if (res.activo && res.carpeta) {
+                const nombre = res.carpeta.split('\\').pop().split('/').pop();
+                statusEl.innerHTML = `👻 <strong>Vigilando: ${nombre}</strong>`;
+            }
+        }
+
+        // ── Sincronizar UI desde la bandeja (llamado via evaluate_js) ────────────
+        function actualizar_ui_fantasma(activo) {
+            const chk = document.getElementById('toggle-fantasma');
+            if (chk) chk.checked = activo;
+            statusEl.innerHTML = activo
+                ? `👻 <strong>Vigilancia en segundo plano activa...</strong>`
+                : "Fantasma desactivado. Listo para trabajar.";
+        }
+
+        // ── Modo Fantasma ─────────────────────────────────────────────────────────
+        async function toggleModoFantasma() {
+            const chk = document.getElementById('toggle-fantasma');
+            if (chk.checked) {
+                const rutaFantasma = await window.pywebview.api.seleccionar_carpeta();
+                if (!rutaFantasma) { chk.checked = false; return; }
+                const res = await window.pywebview.api.toggle_fantasma(rutaFantasma, true);
+                if (res.status === "success") {
+                    statusEl.innerHTML = `👻 <strong>Vigilando: ${rutaFantasma.split('\\').pop()}</strong>`;
+                    showCustomAlert("Modo Fantasma Activo", `OrgPro vigilará:\n\n${rutaFantasma}\n\nPuedes cerrar la ventana — el programa seguirá en la bandeja del sistema.`);
+                } else {
+                    chk.checked = false;
+                    showCustomAlert("Error", res.message);
+                }
+            } else {
+                await window.pywebview.api.toggle_fantasma("", false);
+                statusEl.innerText = "Fantasma desactivado. Listo para trabajar.";
+            }
+        }
+
+        // ── Toast (llamado desde Python via evaluate_js) ──────────────────────────
+        function mostrarToastFantasma(mensaje) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" style="color:var(--primary);"><path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path></svg> <span>${mensaje}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 4000);
+        }
+
+        // ── Desfragmentador de nombres ────────────────────────────────────────────
+        let sugerenciasActuales = {};
+        async function abrirRenombrado() {
+            const ruta = document.getElementById('ruta').value.trim();
+            if (!ruta) { showCustomAlert("Aviso", "Primero selecciona una ruta."); return; }
+            statusEl.innerText = "Pensando nombres (IA)..."; mostrarBarra();
+            const res = await window.pywebview.api.sugerir_nombres(ruta);
+            ocultarBarra();
+            if (res.status === "success") {
+                sugerenciasActuales = res.sugerencias;
+                const list = document.getElementById('rename-list'); list.innerHTML = '';
+                if (Object.keys(sugerenciasActuales).length === 0) { showCustomAlert("¡Impecable!", "No se encontró ningún nombre feo."); return; }
+                for (const [original, nuevo] of Object.entries(sugerenciasActuales)) {
+                    list.innerHTML += `<li style="display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid rgba(139,90,43,0.1);">
+                        <input type="checkbox" id="chk-${original}" value="${original}" checked style="accent-color:var(--primary); transform:scale(1.2); cursor:pointer;">
+                        <div style="display:flex; flex-direction:column; flex-grow:1; text-align:left;">
+                            <span style="font-size:0.8rem; color:#888; text-decoration:line-through;">${original}</span>
+                            <span style="font-weight:800; color:var(--text-main); font-size:0.95rem;">${nuevo}</span>
+                        </div>
+                    </li>`;
+                }
+                document.getElementById('m-rename').classList.remove('hidden');
+                statusEl.innerText = "Sugerencias listas.";
+            } else {
+                showCustomAlert("Error IA", res.message);
+                statusEl.innerText = "Fallo al sugerir.";
+            }
+        }
+        function closeRename() { document.getElementById('m-rename').classList.add('hidden'); }
+        async function aplicarRenombres() {
+            const seleccionados = {};
+            document.querySelectorAll('#rename-list input[type="checkbox"]:checked').forEach(chk => {
+                seleccionados[chk.value] = sugerenciasActuales[chk.value];
+            });
+            if (Object.keys(seleccionados).length === 0) { showCustomAlert("Aviso", "No seleccionaste ningún archivo."); return; }
+            closeRename(); statusEl.innerText = "Renombrando...";
+            const res = await window.pywebview.api.aplicar_renombres(document.getElementById('ruta').value, seleccionados);
+            if (res.status === "success") {
+                showCustomAlert("¡Limpio!", `Se renombraron ${res.cantidad} archivos.`);
+                statusEl.innerText = "Renombrados.";
+                document.getElementById('lista').innerHTML = '<li style="color:#999; justify-content:center; margin-top:50px;">Nombres cambiados. Analiza de nuevo.</li>';
+                document.getElementById('btn-org').disabled = true;
+            } else {
+                showCustomAlert("Error", res.message);
+                statusEl.innerText = "Error en renombrado.";
+            }
+        }
+
+        // ── Drag & Drop ───────────────────────────────────────────────────────────
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('drag-over');
+            let path = e.dataTransfer.getData('text');
+            if (!path && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                path = file.path || file.webkitRelativePath || "";
+            }
+            if (path && path.trim() !== "") {
+                document.getElementById('ruta').value = path;
+                statusEl.innerText = "Ruta detectada.";
+                analizar();
+            } else {
+                showCustomAlert("Aviso", "No se pudo leer la ruta. Pega el texto directamente.");
+            }
+        });
+
+        // ── Init ──────────────────────────────────────────────────────────────────
+        window.addEventListener('DOMContentLoaded', async () => {
+            await apiLista();   // espera el bridge de pywebview
+            initTheme();
+            initFantasma();
+        });
+    </script>
+</body>
+</html>
