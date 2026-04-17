@@ -1,0 +1,42 @@
+[Setup]
+; --- 1. INFO BÁSICA ---
+AppName=OrgPro
+AppVersion=1.3
+AppPublisher=Software Por Chris
+AppCopyright=Copyright (C) 2026 Chris
+
+; --- 2. CONFIGURACIÓN DE CARPETAS ---
+DefaultDirName={autopf}\OrgPro
+DisableProgramGroupPage=yes
+
+; --- 3. SALIDA DEL INSTALADOR ---
+OutputDir=.\InstaladorFinal
+OutputBaseFilename=Instalar_OrgPro
+SetupIconFile=icono.ico
+
+; --- 4. ESTÉTICA E IMÁGENES ACTIVADAS ---
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+
+; Aquí llamamos a tus imágenes (asegúrate de que los nombres coincidan exactamente)
+WizardImageFile=bienvenida.bmp
+WizardSmallImageFile=logo_peq.bmp
+
+; --- 5. EL IDIOMA (ESPAÑOL) ---
+[Languages]
+Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+; El asterisco (*) y el recursesubdirs son clave: le dicen a Inno Setup que tome el .exe, la carpeta 'web' y TODOS los archivos ocultos y los empaquete juntos.
+Source: "dist\OrgPro\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{autoprograms}\OrgPro"; Filename: "{app}\OrgPro.exe"; IconFilename: "{app}\OrgPro.exe"
+Name: "{autodesktop}\OrgPro"; Filename: "{app}\OrgPro.exe"; IconFilename: "{app}\OrgPro.exe"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\OrgPro.exe"; Description: "{cm:LaunchProgram,OrgPro}"; Flags: nowait postinstall skipifsilent

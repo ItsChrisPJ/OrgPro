@@ -1,0 +1,12 @@
+# Archivos de compilación de Python
+build/
+dist/
+*.spec
+__pycache__/
+
+# Instaladores y ejecutables
+InstaladorFinal/
+*.exe
+
+# Configuraciones locales (Para no subir tu API Key real)
+custom_config.json
