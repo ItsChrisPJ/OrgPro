@@ -492,4 +492,4 @@ if __name__ == '__main__':
         icon = pystray.Icon("OrgPro", image, "OrgPro Vigilando", menu=menu)
         threading.Thread(target=icon.run, daemon=True).start()
 
-    webview.start(debug=False)
+webview.start(debug=False)
