@@ -1,7 +1,7 @@
 # Archivos de compilación de Python
 build/
 dist/
-*.spec
+OrgPro.spec
 __pycache__/
 
 # Instaladores y ejecutables
