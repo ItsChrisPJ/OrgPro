@@ -631,15 +631,16 @@
             <div style="text-align: center; margin-bottom: 20px;">
                 <img src="icono.ico" alt="Logo" style="width: 64px; height: 64px; margin-bottom: 10px;">
                 <h2 style="margin: 0; color: var(--primary);">¡Bienvenido a OrgPro!</h2>
-                <span style="font-size: 0.8rem; font-weight: 800; opacity: 0.6;">VERSIÓN 1.3</span>
+                <span style="font-size: 0.8rem; font-weight: 800; opacity: 0.6;">VERSIÓN 1.4</span>
             </div>
 
             <div class="modal-info-box" style="border-left-color: #2b5a8b;">
-                <h3 style="margin: 0; font-size: 0.9rem;">✨ Novedades de la v1.3</h3>
+                <h3 style="margin: 0; font-size: 0.9rem;">✨ Novedades de la v1.4</h3>
                 <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.85rem; line-height: 1.4;">
-                    <li><strong>Mapa de Organización:</strong> Visualiza tus archivos en un grafo interactivo.</li>
-                    <li><strong>Interfaz Minimalista:</strong> Nuevos íconos SVG y mejor legibilidad.</li>
-                    <li><strong>Cámara Inteligente:</strong> Navegación fluida en el grafo.</li>
+                    <li><strong>Impacto Histórico:</strong> Nuevo tablero para ver todo lo que has organizado.</li>
+                    <li><strong>Notificaciones Nativas:</strong> Avisos de Windows (con Modo Silencio).</li>
+                    <li><strong>Buscador en el Mapa:</strong> Encuentra archivos al instante en el grafo.</li>
+                    <li><strong>Reglas Visuales:</strong> Nueva interfaz elegante para tus reglas propias.</li>
                 </ul>
             </div>
 
@@ -844,6 +845,13 @@
             <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; margin-top:-10px; margin-bottom:15px;">
                 Arrastra los elementos, usa la rueda del ratón para hacer zoom, o haz clic en un archivo para ver detalles.
             </p>
+
+            <!-- NUEVO: BUSCADOR DEL MAPA -->
+            <div style="margin-bottom: 15px; position: relative;">
+                <input type="text" id="buscador-grafo" placeholder="Buscar archivo o carpeta..." oninput="buscarEnGrafo()" style="width: 100%; padding: 12px 15px 12px 35px; border-radius: 8px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-main); font-family: 'Inter', sans-serif; box-sizing: border-box; outline: none; transition: border-color 0.3s;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--text-muted)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 12px; top: 14px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+
             <div id="network-container" style="width: 100%; height: 500px; background: rgba(0,0,0,0.1); border-radius: 12px; border: 1px solid var(--border-light);"></div>
         </div>
     </div>
@@ -1151,6 +1159,8 @@
 
         let networkInstance = null;
 
+        document.getElementById('buscador-grafo').value = ''; // Limpia el buscador al abrir
+
         function mostrarGrafo() {
             document.getElementById('m-ok').classList.add('hidden');
             document.getElementById('m-graph').classList.remove('hidden');
@@ -1291,6 +1301,34 @@
                 showCustomAlert("Historial Vacío", res.message || "No hay registros recientes.");
             }
         }
+
+        // --- BUSCADOR DEL MAPA (GRAFO) ---
+        function buscarEnGrafo() {
+            // Asegurarnos de que el mapa exista
+            if (!networkInstance || !lastGraphData) return;
+
+            const textoBuscado = document.getElementById('buscador-grafo').value.toLowerCase().trim();
+            
+            // Si el buscador está vacío, alejamos la cámara para ver todo
+            if (textoBuscado === '') {
+                networkInstance.fit({ animation: { duration: 500, easingFunction: "easeInOutQuad" } });
+                networkInstance.unselectAll();
+                return;
+            }
+
+            // Buscar el primer nodo que coincida con el texto
+            const nodoEncontrado = lastGraphData.nodes.find(n => n.label.toLowerCase().includes(textoBuscado));
+
+            if (nodoEncontrado) {
+                // Seleccionarlo visualmente y volar la cámara hacia él
+                networkInstance.selectNodes([nodoEncontrado.id]);
+                networkInstance.focus(nodoEncontrado.id, {
+                    scale: 1.3,
+                    animation: { duration: 500, easingFunction: "easeInOutQuad" }
+                });
+            }
+        }
+
         function closeHistory() { document.getElementById('m-history').classList.add('hidden'); }
 
         async function deshacer() {
@@ -1436,11 +1474,9 @@
         // --- LÓGICA DE BIENVENIDA Y STARTUP ---
         async function checkStartup() {
             const config = await window.pywebview.api.obtener_config();
-            
-            // Verificamos desde PYTHON si ya vio la bienvenida
-            const versionVista = config.v13_vista;
+            // CAMBIO: Ahora buscamos la variable de la v1.4
+            const versionVista = config.v14_vista; 
 
-            // Si NO la ha visto, mostramos el modal
             if (!versionVista) {
                 if (!config.api_key) {
                     document.getElementById('welcome-api-alert').classList.remove('hidden');
@@ -1453,11 +1489,12 @@
 
         function cerrarBienvenida() {
             document.getElementById('m-welcome').classList.add('hidden');
-            // Al cerrar, le decimos a Python que lo guarde permanentemente
             if (window.pywebview && window.pywebview.api) {
-                window.pywebview.api.guardar_bienvenida();
+                // CAMBIO: Llamamos a la función de la v1.4
+                window.pywebview.api.guardar_bienvenida_v14();
             }
         }
+
 
         window.addEventListener('DOMContentLoaded', async () => {
             await apiLista(); 

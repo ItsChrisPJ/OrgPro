@@ -99,9 +99,9 @@ class Api:
         if current_window:
             current_window.hide()
 
-    def guardar_bienvenida(self):
+    def guardar_bienvenida_v14(self):
         config = cargar_config_usuario()
-        config["v13_vista"] = True
+        config["v14_vista"] = True
         guardar_config_usuario(config)
         return True
 

@@ -1,7 +1,7 @@
 [Setup]
 ; --- 1. INFO BÁSICA ---
 AppName=OrgPro
-AppVersion=1.3
+AppVersion=1.4
 AppPublisher=Software Por Chris
 AppCopyright=Copyright (C) 2026 Chris
 
