@@ -7,6 +7,8 @@ import queue
 import threading
 import webview
 from groq import Groq
+from plyer import notification
+
 
 try:
     import pystray
@@ -132,6 +134,12 @@ class Api:
         guardar_config_usuario(config)
         return True
     
+    def guardar_modo_silencio(self, activo):
+        config = cargar_config_usuario()
+        config["modo_silencio"] = activo
+        guardar_config_usuario(config)
+        return True
+    
     def guardar_tema_color(self, tema):
         config = cargar_config_usuario()
         config["theme_color"] = tema
@@ -147,6 +155,36 @@ class Api:
             if result:
                 return result[0]
         return None
+
+    def obtener_estadisticas(self):
+        config = cargar_config_usuario()
+        # Si es la primera vez, creamos el diccionario de estadísticas en cero
+        if "stats" not in config:
+            config["stats"] = {
+                "archivos_totales": 0, 
+                "megabytes_totales": 0.0, 
+                "minutos_ahorrados": 0
+            }
+            guardar_config_usuario(config)
+        return config["stats"]
+
+    def sumar_estadisticas(self, archivos_nuevos, megabytes_nuevos):
+        config = cargar_config_usuario()
+        
+        # Por seguridad, si no existe, lo creamos
+        if "stats" not in config:
+            config["stats"] = {"archivos_totales": 0, "megabytes_totales": 0.0, "minutos_ahorrados": 0}
+
+        # Sumamos los datos del trabajo que acaba de terminar
+        config["stats"]["archivos_totales"] += int(archivos_nuevos)
+        config["stats"]["megabytes_totales"] += float(megabytes_nuevos)
+        
+        # Mágia: Calculamos el tiempo ahorrado (asumiendo que mover un archivo a mano toma 3 segundos)
+        segundos_totales = config["stats"]["archivos_totales"] * 3
+        config["stats"]["minutos_ahorrados"] = round(segundos_totales / 60)
+
+        guardar_config_usuario(config)
+        return config["stats"]
 
     def analizar_archivos(self, ruta, usar_ia):
         try:
@@ -415,7 +453,22 @@ def procesador_cola():
                     try: current_window.show()
                     except: pass
             elif action == "toast":
+                # 1. Notificación visual dentro de la app (HTML) - Esta siempre sale
                 call_js(f'mostrarToastFantasma({json.dumps(data)})')
+                
+                # 2. Notificación Nativa con Filtro de Silencio
+                config = cargar_config_usuario()
+                if not config.get("modo_silencio", False):
+                    try:
+                        notification.notify(
+                            title="OrgPro - Modo Fantasma 👻",
+                            message=data,
+                            app_name="OrgPro",
+                            app_icon="icono.ico",
+                            timeout=5
+                        )
+                    except Exception:
+                        pass
             elif action == "ui_fantasma":
                 call_js(f'actualizar_ui_fantasma({json.dumps(data)})')
         except queue.Empty:
