@@ -5,10 +5,11 @@ import json
 import time
 import queue
 import threading
+import hashlib
+from datetime import datetime
 import webview
 from groq import Groq
 from plyer import notification
-
 
 try:
     import pystray
@@ -66,21 +67,16 @@ EXTENSIONES_CONOCIDAS = {
     '.ttf': 'Fuentes Tipográficas', '.otf': 'Fuentes Tipográficas', '.woff': 'Fuentes Tipográficas'
 }
 
-# ─── Referencia global a la ventana ────────────────────────────────────────────
 current_window = None
+tray_icon      = None
 tray_queue     = queue.Queue()
-
 
 def call_js(code: str):
     global current_window
     if current_window:
-        try:
-            current_window.evaluate_js(code)
-        except Exception:
-            pass
+        try: current_window.evaluate_js(code)
+        except: pass
 
-
-# ─── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
 def cargar_config_usuario():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -92,12 +88,27 @@ def guardar_config_usuario(config):
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
 
-# ─── API EXPUESTA A JAVASCRIPT ─────────────────────────────────────────────────
 class Api:
-    def cerrar_ventana(self):
+    def minimizar_ventana(self):
         global current_window
+        if current_window: current_window.minimize()
+
+    def maximizar_ventana(self):
+        global current_window
+        if current_window: current_window.toggle_fullscreen() 
+
+    def manejar_cierre_inteligente(self, fantasma_activo_ui):
+        global current_window, fantasma_activo, tray_icon
+        config = cargar_config_usuario()
+        cron_activo = config.get("cron", {}).get("activo", False)
+        
         if current_window:
-            current_window.hide()
+            # Si Fantasma O Cron están activos, ocultamos en vez de cerrar
+            if fantasma_activo_ui or fantasma_activo or cron_activo:
+                current_window.hide()
+            else:
+                if tray_icon: tray_icon.stop()
+                os._exit(0)
 
     def guardar_bienvenida_v14(self):
         config = cargar_config_usuario()
@@ -134,6 +145,12 @@ class Api:
         guardar_config_usuario(config)
         return True
     
+    def guardar_idioma(self, lang):
+        config = cargar_config_usuario()
+        config["language"] = lang
+        guardar_config_usuario(config)
+        return True
+    
     def guardar_modo_silencio(self, activo):
         config = cargar_config_usuario()
         config["modo_silencio"] = activo
@@ -146,54 +163,105 @@ class Api:
         guardar_config_usuario(config)
         return True
 
+    # --- NUEVAS FUNCIONES: CRON ---
+    def guardar_cron(self, activo, ruta, hora):
+        config = cargar_config_usuario()
+        config["cron"] = {"activo": activo, "ruta": ruta.strip('"').strip("'"), "hora": hora}
+        guardar_config_usuario(config)
+        return True
+
+    # --- NUEVAS FUNCIONES: CAZA-DUPLICADOS (HASH) ---
+    def buscar_duplicados(self, ruta):
+        try:
+            ruta = ruta.strip('"').strip("'")
+            if not os.path.exists(ruta): return {"status": "error", "message": "La ruta no existe."}
+            
+            hashes = {}
+            for f in os.listdir(ruta):
+                p = os.path.join(ruta, f)
+                if os.path.isfile(p) and not f.startswith('.'):
+                    # Leemos los archivos en fragmentos de 64kb para no saturar la RAM si son grandes
+                    hasher = hashlib.md5()
+                    with open(p, 'rb') as afile:
+                        buf = afile.read(65536)
+                        while len(buf) > 0:
+                            hasher.update(buf)
+                            buf = afile.read(65536)
+                    h = hasher.hexdigest()
+                    if h in hashes: hashes[h].append(f)
+                    else: hashes[h] = [f]
+            
+            # Filtramos solo los que tienen más de 1 coincidencia
+            dups = {k: v for k, v in hashes.items() if len(v) > 1}
+            return {"status": "success", "duplicados": dups}
+        except Exception as e: return {"status": "error", "message": str(e)}
+
+    # --- NUEVAS FUNCIONES: PAPELERA DE RECICLAJE INTERNA ---
+    def enviar_a_papelera(self, ruta, archivos):
+        try:
+            ruta = ruta.strip('"').strip("'")
+            papelera = os.path.join(ruta, '.orgpro_trash')
+            os.makedirs(papelera, exist_ok=True)
+            movidos = 0
+            for arch in archivos:
+                src = os.path.join(ruta, arch)
+                if os.path.exists(src):
+                    shutil.move(src, os.path.join(papelera, arch))
+                    movidos += 1
+            return {"status": "success", "cantidad": movidos}
+        except Exception as e: return {"status": "error", "message": str(e)}
+
+    def ver_papelera(self, ruta):
+        try:
+            ruta = ruta.strip('"').strip("'")
+            papelera = os.path.join(ruta, '.orgpro_trash')
+            if not os.path.exists(papelera): return {"status": "success", "archivos": []}
+            archs = [f for f in os.listdir(papelera) if os.path.isfile(os.path.join(papelera, f))]
+            return {"status": "success", "archivos": archs}
+        except Exception as e: return {"status": "error", "message": str(e)}
+
+    def vaciar_papelera(self, ruta):
+        try:
+            ruta = ruta.strip('"').strip("'")
+            papelera = os.path.join(ruta, '.orgpro_trash')
+            if os.path.exists(papelera):
+                shutil.rmtree(papelera)
+                return {"status": "success"}
+            return {"status": "error", "message": "Papelera ya estaba vacía"}
+        except Exception as e: return {"status": "error", "message": str(e)}
+
+    def restaurar_papelera(self, ruta, archivo):
+        try:
+            ruta = ruta.strip('"').strip("'")
+            papelera = os.path.join(ruta, '.orgpro_trash')
+            src = os.path.join(papelera, archivo)
+            if os.path.exists(src):
+                shutil.move(src, os.path.join(ruta, archivo))
+                return {"status": "success"}
+            return {"status": "error", "message": "Archivo no encontrado"}
+        except Exception as e: return {"status": "error", "message": str(e)}
+
+
     def seleccionar_carpeta(self):
         global current_window
         if current_window:
-            result = current_window.create_file_dialog(
-                webview.FOLDER_DIALOG, allow_multiple=False
-            )
-            if result:
-                return result[0]
+            result = current_window.create_file_dialog(webview.FOLDER_DIALOG, allow_multiple=False)
+            if result: return result[0]
         return None
 
     def obtener_estadisticas(self):
         config = cargar_config_usuario()
-        # Si es la primera vez, creamos el diccionario de estadísticas en cero
         if "stats" not in config:
-            config["stats"] = {
-                "archivos_totales": 0, 
-                "megabytes_totales": 0.0, 
-                "minutos_ahorrados": 0
-            }
+            config["stats"] = {"archivos_totales": 0, "megabytes_totales": 0.0, "minutos_ahorrados": 0}
             guardar_config_usuario(config)
         return config["stats"]
 
-    def sumar_estadisticas(self, archivos_nuevos, megabytes_nuevos):
-        config = cargar_config_usuario()
-        
-        # Por seguridad, si no existe, lo creamos
-        if "stats" not in config:
-            config["stats"] = {"archivos_totales": 0, "megabytes_totales": 0.0, "minutos_ahorrados": 0}
-
-        # Sumamos los datos del trabajo que acaba de terminar
-        config["stats"]["archivos_totales"] += int(archivos_nuevos)
-        config["stats"]["megabytes_totales"] += float(megabytes_nuevos)
-        
-        # Mágia: Calculamos el tiempo ahorrado (asumiendo que mover un archivo a mano toma 3 segundos)
-        segundos_totales = config["stats"]["archivos_totales"] * 3
-        config["stats"]["minutos_ahorrados"] = round(segundos_totales / 60)
-
-        guardar_config_usuario(config)
-        return config["stats"]
-
-    def analizar_archivos(self, ruta, usar_ia):
+    def analizar_archivos(self, ruta, usar_ia, contexto_ia=""):
         try:
             ruta = ruta.strip('"').strip("'")
-            if not os.path.exists(ruta):
-                return {"status": "error", "message": "La ruta ingresada no existe."}
+            if not os.path.exists(ruta): return {"status": "error", "message": "La ruta ingresada no existe."}
             archivos = [f for f in os.listdir(ruta) if os.path.isfile(os.path.join(ruta, f)) and not f.startswith('.')]
-            if not archivos:
-                return {"status": "error", "message": "No hay archivos sueltos en esa carpeta."}
+            if not archivos: return {"status": "error", "message": "No hay archivos sueltos en esa carpeta."}
             config_user = cargar_config_usuario()
             reglas_user = config_user.get("rules", {})
             plan = {}
@@ -207,21 +275,21 @@ class Api:
                 return {"status": "success", "plan": plan, "modo": "Personalizado"}
             else:
                 api_key = config_user.get("api_key", "")
-                if not api_key: return {"status": "error", "message": "No has configurado tu API Key de Groq en Ajustes."}
+                if not api_key: return {"status": "error", "message": "No has configurado tu API Key."}
                 client = Groq(api_key=api_key)
-                prompt = f"Clasifica estos archivos en carpetas lógicas. Devuelve ÚNICAMENTE un objeto JSON plano (sin anidar). Clave: Nombre del archivo, Valor: Nombre de la carpeta sugerida. Archivos: {str(archivos)}"
+                prompt = "Clasifica estos archivos en carpetas lógicas. "
+                if contexto_ia: prompt += f" REGLA ESPECÍFICA DEL USUARIO: {contexto_ia}. "
+                prompt += f" Devuelve ÚNICAMENTE un objeto JSON plano (sin anidar). Clave: Nombre del archivo, Valor: Nombre de la carpeta sugerida. Archivos: {str(archivos)}"
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model="llama-3.1-8b-instant", temperature=0.1, max_tokens=4096,
                     response_format={"type": "json_object"}
                 )
                 plan_bruto = json.loads(chat_completion.choices[0].message.content)
-                if len(plan_bruto) == 1 and isinstance(list(plan_bruto.values())[0], dict):
-                    plan_bruto = list(plan_bruto.values())[0]
+                if len(plan_bruto) == 1 and isinstance(list(plan_bruto.values())[0], dict): plan_bruto = list(plan_bruto.values())[0]
                 plan = {str(k): str(v) for k, v in plan_bruto.items()}
                 return {"status": "success", "plan": plan, "modo": "IA (Llama 3.1)"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception as e: return {"status": "error", "message": str(e)}
 
     def sugerir_nombres(self, ruta):
         try:
@@ -232,18 +300,16 @@ class Api:
             api_key = cargar_config_usuario().get("api_key", "")
             if not api_key: return {"status": "error", "message": "Falta API Key."}
             client = Groq(api_key=api_key)
-            prompt = f"Actúa como un experto en limpieza digital. Analiza esta lista de nombres de archivos. Identifica solo aquellos con nombres confusos o genéricos. Sugiere un nombre limpio conservando la extensión original. Devuelve ÚNICAMENTE un objeto JSON plano donde la clave es el nombre original y el valor es el nuevo sugerido. Lista: {str(archivos)}"
+            prompt = f"Actúa como experto en limpieza. Analiza esta lista de nombres. Identifica nombres confusos o genéricos. Sugiere un nombre limpio conservando la extensión original. Devuelve ÚNICAMENTE un objeto JSON plano donde la clave es el nombre original y el valor es el nuevo. Lista: {str(archivos)}"
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.1-8b-instant", temperature=0.1, max_tokens=4096,
                 response_format={"type": "json_object"}
             )
             sugerencias = json.loads(chat_completion.choices[0].message.content)
-            if len(sugerencias) == 1 and isinstance(list(sugerencias.values())[0], dict):
-                sugerencias = list(sugerencias.values())[0]
+            if len(sugerencias) == 1 and isinstance(list(sugerencias.values())[0], dict): sugerencias = list(sugerencias.values())[0]
             return {"status": "success", "sugerencias": sugerencias}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception as e: return {"status": "error", "message": str(e)}
 
     def aplicar_renombres(self, ruta, renombres):
         try:
@@ -256,8 +322,7 @@ class Api:
                     os.rename(ruta_orig, ruta_nueva)
                     aplicados += 1
             return {"status": "success", "cantidad": aplicados}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception as e: return {"status": "error", "message": str(e)}
 
     def organizar_archivos(self, ruta, plan):
         try:
@@ -274,12 +339,7 @@ class Api:
             bytes_total = 0
             carpetas_usadas = set()
 
-            # --- Estructura para el Grafo de Conocimiento ---
-            graph_data = {
-                "nodes": [{"id": "root", "label": "OrgPro", "group": "root"}],
-                "edges": []
-            }
-            # ------------------------------------------------
+            graph_data = {"nodes": [{"id": "root", "label": "OrgPro", "group": "root"}], "edges": []}
 
             for archivo, carpeta in plan.items():
                 ruta_origen = os.path.join(ruta, archivo)
@@ -289,7 +349,6 @@ class Api:
                 ruta_dest = os.path.join(ruta, carpeta)
                 os.makedirs(ruta_dest, exist_ok=True)
                 
-                # --- Lógica del Grafo ---
                 if carpeta not in carpetas_usadas:
                     graph_data["nodes"].append({"id": carpeta, "label": carpeta, "group": "category"})
                     graph_data["edges"].append({"from": "root", "to": carpeta})
@@ -297,7 +356,6 @@ class Api:
                 archivo_id = f"file_{procesados}"
                 graph_data["nodes"].append({"id": archivo_id, "label": archivo, "group": "file"})
                 graph_data["edges"].append({"from": carpeta, "to": archivo_id})
-                # ------------------------
 
                 carpetas_usadas.add(carpeta)
                 ruta_final = os.path.join(ruta_dest, archivo)
@@ -312,17 +370,11 @@ class Api:
                 call_js(f'actualizarProgreso({round((procesados / total) * 100, 2)})')
                 time.sleep(0.01)
 
-            with open(historial_path, 'w', encoding='utf-8') as f:
-                json.dump(historial, f, indent=4)
+            with open(historial_path, 'w', encoding='utf-8') as f: json.dump(historial, f, indent=4)
             tamano = self._formatear_tamano(bytes_total)
             
-            return {
-                "status": "success", 
-                "stats": {"archivos": procesados, "carpetas": len(carpetas_usadas), "tamano": tamano},
-                "graph": graph_data # Enviamos los datos del grafo al JS
-            }
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+            return {"status": "success", "stats": {"archivos": procesados, "carpetas": len(carpetas_usadas), "tamano": tamano}, "graph": graph_data}
+        except Exception as e: return {"status": "error", "message": str(e)}
 
     def _formatear_tamano(self, bytes_total):
         if bytes_total < 1024: return f"{bytes_total} B"
@@ -334,32 +386,40 @@ class Api:
         try:
             ruta = ruta.strip('"').strip("'")
             historial_path = os.path.join(ruta, '.historial_org.json')
-            if not os.path.exists(historial_path): return {"status": "error", "message": "No hay historial reciente en esta carpeta."}
+            if not os.path.exists(historial_path): return {"status": "error", "message": "No hay historial reciente."}
             with open(historial_path, 'r', encoding='utf-8') as f: historial = json.load(f)
             return {"status": "success", "data": historial}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception as e: return {"status": "error", "message": str(e)}
 
-    def deshacer_organizacion(self, ruta):
+    def deshacer_organizacion(self, ruta, ruta_especifica=None):
         try:
             ruta = ruta.strip('"').strip("'")
             historial_path = os.path.join(ruta, '.historial_org.json')
             if not os.path.exists(historial_path): return {"status": "error", "message": "No hay historial para deshacer."}
-            with open(historial_path, 'r', encoding='utf-8') as f:
-                historial = json.load(f)
+            
+            with open(historial_path, 'r', encoding='utf-8') as f: historial = json.load(f)
+                
             carpetas_afectadas = set()
+            items_a_borrar = []
+            
             for ruta_actual, ruta_original in historial.items():
+                if ruta_especifica and ruta_actual != ruta_especifica: continue
                 if os.path.exists(ruta_actual):
                     carpetas_afectadas.add(os.path.dirname(ruta_actual))
                     shutil.move(ruta_actual, ruta_original)
+                    items_a_borrar.append(ruta_actual)
+            
+            for item in items_a_borrar: del historial[item]
             for carpeta in carpetas_afectadas:
                 if os.path.exists(carpeta) and not os.listdir(carpeta):
                     try: os.rmdir(carpeta)
                     except: pass
-            os.remove(historial_path)
+            
+            if not historial: os.remove(historial_path)
+            else:
+                with open(historial_path, 'w', encoding='utf-8') as f: json.dump(historial, f, indent=4)
             return {"status": "success"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception as e: return {"status": "error", "message": str(e)}
 
     def estado_fantasma(self):
         return {"activo": fantasma_activo, "carpeta": carpeta_fantasma}
@@ -378,11 +438,9 @@ class Api:
             fantasma_activo = False
             return {"status": "success"}
 
-
 api_instance = Api()
 
-
-# ─── MODO FANTASMA ─────────────────────────────────────
+# ─── DAEMON: MODO FANTASMA ─────────────────────────────────────
 fantasma_activo   = False
 carpeta_fantasma  = ""
 archivos_conocidos = set()
@@ -436,12 +494,51 @@ def fantasma_loop():
                     archivos_conocidos -= fallidos
                 else:
                     archivos_conocidos = actuales
-            except Exception:
-                pass
+            except Exception: pass
         time.sleep(3)
 
-threading.Thread(target=fantasma_loop, daemon=True).start()
+# ─── DAEMON: CRON SCHEDULER ─────────────────────────────────────
+def cron_loop():
+    last_run_date = ""
+    while True:
+        try:
+            config = cargar_config_usuario()
+            cron = config.get("cron", {})
+            if cron.get("activo") and cron.get("ruta") and cron.get("hora"):
+                now = datetime.now()
+                hora_actual = now.strftime("%H:%M")
+                fecha_actual = now.strftime("%Y-%m-%d")
+                
+                # Ejecutar solo 1 vez al día a la hora exacta
+                if hora_actual == cron.get("hora") and last_run_date != fecha_actual:
+                    ruta = cron.get("ruta")
+                    if os.path.exists(ruta):
+                        archivos = [f for f in os.listdir(ruta) if os.path.isfile(os.path.join(ruta, f)) and not f.startswith('.')]
+                        reglas = config.get("rules", {})
+                        plan = {}
+                        for a in archivos:
+                            _, ext = os.path.splitext(a.lower())
+                            if ext in ['.crdownload', '.part', '.tmp', '.download']: continue
+                            if ext in reglas: plan[a] = reglas[ext]
+                            elif ext in EXTENSIONES_CONOCIDAS: plan[a] = EXTENSIONES_CONOCIDAS[ext]
+                            else: plan[a] = "Otros Archivos"
+                        
+                        for a, c in plan.items():
+                            r_origen = os.path.join(ruta, a)
+                            r_dest = os.path.join(ruta, c)
+                            os.makedirs(r_dest, exist_ok=True)
+                            r_final = os.path.join(r_dest, a)
+                            if not os.path.exists(r_final):
+                                shutil.move(r_origen, r_final)
+                    
+                    last_run_date = fecha_actual
+                    tray_queue.put(("toast", f"Cron: Limpieza automática completada en {ruta}"))
+        except Exception: pass
+        time.sleep(30) # Comprueba cada 30 segundos
 
+
+threading.Thread(target=fantasma_loop, daemon=True).start()
+threading.Thread(target=cron_loop, daemon=True).start()
 
 def procesador_cola():
     while True:
@@ -453,52 +550,45 @@ def procesador_cola():
                     try: current_window.show()
                     except: pass
             elif action == "toast":
-                # 1. Notificación visual dentro de la app (HTML) - Esta siempre sale
                 call_js(f'mostrarToastFantasma({json.dumps(data)})')
-                
-                # 2. Notificación Nativa con Filtro de Silencio
                 config = cargar_config_usuario()
                 if not config.get("modo_silencio", False):
-                    try:
-                        notification.notify(
-                            title="OrgPro - Modo Fantasma 👻",
-                            message=data,
-                            app_name="OrgPro",
-                            app_icon="icono.ico",
-                            timeout=5
-                        )
-                    except Exception:
-                        pass
+                    try: notification.notify(title="OrgPro Daemon ⚙️", message=data, app_name="OrgPro", app_icon="icono.ico", timeout=5)
+                    except: pass
             elif action == "ui_fantasma":
                 call_js(f'actualizar_ui_fantasma({json.dumps(data)})')
-        except queue.Empty:
-            pass
-        except Exception:
-            pass
+        except queue.Empty: pass
+        except Exception: pass
 
 threading.Thread(target=procesador_cola, daemon=True).start()
-
 
 if __name__ == '__main__':
     print(">>> INICIANDO ORGANIZADOR INTELIGENTE PRO (pywebview)...")
 
     def on_closing():
-        global current_window
-        if current_window:
-            current_window.hide()
-        return False
+        global current_window, fantasma_activo, tray_icon
+        config = cargar_config_usuario()
+        cron_activo = config.get("cron", {}).get("activo", False)
+        
+        if fantasma_activo or cron_activo:
+            if current_window: current_window.hide()
+            return False
+        else:
+            if tray_icon: tray_icon.stop()
+            os._exit(0)
+            return True
 
     current_window = webview.create_window(
-        'OrgPro – Organizador Inteligente',
+        'OrgPro v1.5 [Arch Edition]',
         HTML_PATH,
         js_api=api_instance,
-        width=800,
-        height=880,
-        frameless=True,
-        resizable=False,
+        width=900,
+        height=750,
+        frameless=False,
+        resizable=True,
         text_select=False,
         easy_drag=False,
-        background_color='#fdfbf7'
+        background_color='#1a1b26'
     )
     current_window.events.closing += on_closing
 
@@ -509,9 +599,7 @@ if __name__ == '__main__':
             
         image = Image.open(icono_path) if os.path.exists(icono_path) else Image.new('RGB', (64, 64), color=(139, 90, 43))
 
-        def on_show(icon, item):
-            tray_queue.put(("show", None))
-
+        def on_show(icon, item): tray_queue.put(("show", None))
         def on_quit(icon, item):
             icon.stop()
             os._exit(0)
@@ -520,29 +608,24 @@ if __name__ == '__main__':
             global fantasma_activo, carpeta_fantasma, archivos_conocidos
             if not fantasma_activo:
                 if carpeta_fantasma and os.path.exists(carpeta_fantasma):
-                    archivos_conocidos = set(
-                        f for f in os.listdir(carpeta_fantasma)
-                        if os.path.isfile(os.path.join(carpeta_fantasma, f)) and not f.startswith('.')
-                    )
+                    archivos_conocidos = set(f for f in os.listdir(carpeta_fantasma) if os.path.isfile(os.path.join(carpeta_fantasma, f)) and not f.startswith('.'))
                     fantasma_activo = True
                     tray_queue.put(("toast", "Fantasma Reactivado"))
                     tray_queue.put(("ui_fantasma", True))
-                else:
-                    tray_queue.put(("show", None))
+                else: tray_queue.put(("show", None))
             else:
                 fantasma_activo = False
                 tray_queue.put(("toast", "Fantasma Pausado"))
                 tray_queue.put(("ui_fantasma", False))
 
-        def get_fantasma_state(item):
-            return fantasma_activo
+        def get_fantasma_state(item): return fantasma_activo
 
         menu = pystray.Menu(
             item('Abrir Interfaz',      on_show,              default=True),
             item('Vigilancia Fantasma', toggle_fantasma_tray, checked=get_fantasma_state),
             item('Salir Completamente', on_quit)
         )
-        icon = pystray.Icon("OrgPro", image, "OrgPro Vigilando", menu=menu)
-        threading.Thread(target=icon.run, daemon=True).start()
+        tray_icon = pystray.Icon("OrgPro", image, "OrgPro Daemon", menu=menu)
+        threading.Thread(target=tray_icon.run, daemon=True).start()
 
 webview.start(debug=False)
