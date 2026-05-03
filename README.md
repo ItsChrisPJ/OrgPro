@@ -30,7 +30,7 @@
 ## ⚙️ Instalación
 
 1. Ve a la pestaña de **[Releases](../../releases)** a la derecha de esta página.
-2. Descarga la versión más reciente (`Instalar_OrgPro_v1.5.exe`).
+2. Descarga la versión más reciente (`Setup_OrgPro_v1.5.exe`).
 3. Ejecuta el instalador y sigue los pasos.
 4. ¡Listo! Ya puedes empezar a organizar tu PC.
 
