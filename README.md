@@ -1,4 +1,4 @@
-<h1 align="center">📁 OrgPro v1.5 - Arch Edition</h1>
+<h1 align="center">📁 OrgPro v1.6 - Smart AI Update</h1>
 
 <p align="center">
   <i>Una aplicación de escritorio híbrida y moderna diseñada para automatizar la limpieza y organización de tus archivos utilizando reglas locales e Inteligencia Artificial.</i>
@@ -6,31 +6,29 @@
 
 ---
 
-## ✨ Novedades en la v1.5
-* 🖥️ **Interfaz "Arch Edition":** Rediseño total de la ventana inspirado en la estética minimalista de los gestores de ventanas en mosaico (Tiling Window Managers) como **Hyprland** o **i3**, muy populares en la comunidad de Arch Linux. Una experiencia de terminal elegante, completamente responsiva y con integración nativa a los bordes de Windows.
-* 👯‍♂️ **Caza-Duplicados Inteligente (Hash MD5):** Nuevo motor que escanea el contenido real de los archivos (su huella digital) para encontrar y limpiar duplicados exactos, sin importar si tienen nombres distintos.
-* 🗑️ **Papelera Segura:** Los archivos duplicados gestionados ya no se borran permanentemente. Se envían a un entorno seguro oculto (`.orgpro_trash`) donde puedes restaurarlos con un clic.
-* ⏰ **Auto-Limpieza (Cron):** Configura una hora exacta y OrgPro organizará la carpeta seleccionada automáticamente todos los días en segundo plano.
-* 🤖 **Instrucciones IA (Prompts):** Toma el control total de la IA. Escribe directivas específicas (ej. *"Ignora los PDFs y agrupa por año"*) antes de realizar el análisis.
-* ↩️ **Deshacer Selectivo:** El panel de historial ahora te permite revertir archivos a su ruta original **uno por uno**, sin afectar la organización del resto de la carpeta.
-* 🌍 **Soporte Multi-Idioma:** Nueva arquitectura interna que soporta cambio en tiempo real entre Español e Inglés directamente desde Ajustes.
+## ✨ Novedades en la v1.6
+* 🧠 **Analizador de Contenido (Deep Scan):** OrgPro ya no se limita al nombre del archivo. Al activar esta opción, lee el interior de tus documentos de texto y código (`.txt`, `.md`, `.csv`, `.log`, etc.), extrae el contexto real y se lo envía a la IA para una precisión de clasificación milimétrica.
+* 🎛️ **Control de Creatividad (IA Temperature):** Ajusta cómo piensa la IA. Usa el modo "Estricto" para agrupar todo en categorías globales (Documentos, Imágenes) o el modo "Creativo" para generar subcarpetas dinámicas por proyecto, año o cliente.
+* 🛡️ **Filtro Anti-Spam (Agrupación Inteligente):** Evita el "caos de carpetas". Si la IA decide crear una carpeta para almacenar menos de 3 archivos, OrgPro la bloquea inteligentemente y agrupa esos archivos huérfanos en una carpeta `"Varios"` u `"Otros"`.
 
 ## 🚀 Características Principales
 
-* ⚡ **Análisis Rápido (Local):** Clasifica archivos instantáneamente basándose en un diccionario integrado y reglas propias configurables.
-* 🧠 **Análisis Profundo (IA):** Integración con la API de Groq para deducir y clasificar archivos desconocidos o sin extensión clara.
-* 🪄 **Limpieza de Nombres:** La IA analiza nombres de archivos corruptos o generados por el sistema (ej. `IMG_001_final_xx.jpg`) y sugiere nombres legibles y profesionales.
-* 👻 **Modo Fantasma (Segundo Plano):** La aplicación se ancla a la bandeja del sistema (reloj de Windows) y vigila una carpeta en tiempo real, auto-organizando cualquier archivo nuevo de forma silenciosa.
+* ⚡ **Análisis Rápido (Local):** Clasifica archivos instantáneamente basándose en un diccionario integrado de más de 120 extensiones y reglas de prioridad configurables por el usuario.
+* 🧠 **Análisis Profundo (IA):** Integración con la API de Groq para deducir y clasificar archivos desconocidos o sin extensión. Toma el control total escribiendo directivas (prompts) personalizadas antes de analizar.
+* 🪄 **IA Name (Limpieza de Nombres):** Analiza nombres de archivos corruptos o generados por el sistema (ej. `IMG_001_final_xx.jpg`) y sugiere nombres legibles y profesionales automáticamente.
+* 👯‍♂️ **Caza-Duplicados Inteligente (Hash MD5):** Escanea la huella digital real del contenido para encontrar y limpiar duplicados exactos, sin importar cómo se llamen.
+* 🗑️ **Papelera Segura:** Los duplicados gestionados se envían a un entorno oculto (`.orgpro_trash`) donde puedes restaurarlos con un solo clic.
+* 👻 **Modo Fantasma & Auto-Limpieza (Cron):** Deja a OrgPro en la bandeja de tu sistema vigilando una carpeta en tiempo real, o programa una hora exacta para que limpie en segundo plano todos los días.
 * 🌌 **Mapa de Organización:** Visualiza tus archivos y carpetas en un grafo de red interactivo con cámara inteligente, zoom y buscador instantáneo.
-* 🎨 **Colorways Premium:** Personaliza tu experiencia con temas inspirados en programación como *Arch Blue, Hacker Green, Neón, Volcán, Menta* y *Espresso*.
+* ↩️ **Deshacer Selectivo:** Revierte archivos a su ruta original uno por uno desde el panel de historial sin afectar la organización del resto de la carpeta.
+* 🌍 **Soporte Bilingüe & Temas Premium:** Interfaz "Arch Edition" con cambio en tiempo real entre Español e Inglés. Personaliza tu experiencia con temas inspirados en programación como *Arch Blue, Hacker Green, Neón, Volcán, Menta* y *Espresso*.
 * 🖱️ **Arrastrar y Soltar:** Arrastra carpetas directamente sobre la terminal para analizarlas al instante.
-* 🔔 **Notificaciones Nativas:** Integración directa con el sistema de Windows para avisarte cuando limpia una carpeta en segundo plano (con Modo Silencio opcional).
 * 📊 **Tablero de Estadísticas:** Descubre cuántos archivos has organizado y los minutos ahorrados en total a nivel global.
 
 ## ⚙️ Instalación
 
 1. Ve a la pestaña de **[Releases](../../releases)** a la derecha de esta página.
-2. Descarga la versión más reciente (`Setup_OrgPro_v1.5.exe`).
+2. Descarga la versión más reciente (`Setup_OrgPro_v1.6.exe`).
 3. Ejecuta el instalador y sigue los pasos.
 4. ¡Listo! Ya puedes empezar a organizar tu PC.
 
