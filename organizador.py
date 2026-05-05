@@ -249,8 +249,7 @@ class Api:
             guardar_config_usuario(config)
         return config["stats"]
 
-    # NUEVO: Se agregó parámetro leer_contenido
-    def analizar_archivos(self, ruta, usar_ia, contexto_ia="", leer_contenido=False):
+    def analizar_archivos(self, ruta, usar_ia, contexto_ia="", leer_contenido=False, creatividad="balanceado", anti_spam=False):
         try:
             ruta = ruta.strip('"').strip("'")
             if not os.path.exists(ruta): return {"status": "error", "message": "La ruta ingresada no existe."}
@@ -259,6 +258,7 @@ class Api:
             
             config_user = cargar_config_usuario()
             reglas_user = config_user.get("rules", {})
+            idioma = config_user.get("language", "es")
             plan = {}
             
             if not usar_ia:
@@ -267,7 +267,7 @@ class Api:
                     if ext in ['.crdownload', '.part', '.tmp', '.download']: continue
                     if ext in reglas_user: plan[archivo] = reglas_user[ext]
                     elif ext in EXTENSIONES_CONOCIDAS: plan[archivo] = EXTENSIONES_CONOCIDAS[ext]
-                    else: plan[archivo] = "Otros Archivos"
+                    else: plan[archivo] = "Otros Archivos" if idioma == "es" else "Other Files"
                 return {"status": "success", "plan": plan, "modo": "Personalizado"}
             else:
                 api_key = config_user.get("api_key", "")
@@ -275,9 +275,17 @@ class Api:
                 client = Groq(api_key=api_key)
                 
                 prompt = "Clasifica estos archivos en carpetas lógicas. "
+                
+                temp = 0.1
+                if creatividad == "estricto":
+                    temp = 0.0
+                    prompt += "Usa SOLO categorías principales genéricas (ej. Documentos, Imágenes, Videos, Código). Evita crear subcategorías o carpetas demasiado específicas. "
+                elif creatividad == "creativo":
+                    temp = 0.5
+                    prompt += "Crea carpetas muy específicas y detalladas, separando inteligentemente por contexto, proyectos, clientes, fechas o autores. "
+                
                 if contexto_ia: prompt += f" REGLA ESPECÍFICA DEL USUARIO: {contexto_ia}. "
                 
-                # --- NUEVO: ANALIZADOR PROFUNDO DE CONTENIDO (DEEP SCAN) ---
                 datos_archivos = []
                 text_extensions = {'.txt', '.md', '.csv', '.json', '.html', '.css', '.js', '.py', '.log', '.xml', '.yml', '.yaml', '.ini', '.env', '.sh', '.bat'}
                 
@@ -288,32 +296,39 @@ class Api:
                     if leer_contenido and ext in text_extensions:
                         try:
                             ruta_archivo = os.path.join(ruta, archivo)
-                            # errors='ignore' previene crasheos con archivos raros
                             with open(ruta_archivo, 'r', encoding='utf-8', errors='ignore') as f:
-                                texto = f.read(400).strip() # Extraemos los primeros 400 caracteres
+                                texto = f.read(400).strip()
                                 if texto:
-                                    # Limpiamos saltos de línea y tabulaciones para no romper el prompt de la IA
                                     texto_limpio = " ".join(texto.split())
                                     muestra = f" (Muestra del contenido interno: '{texto_limpio[:350]}...')"
                         except Exception:
-                            pass # Si falla al abrir, simplemente lo ignoramos y pasamos solo el nombre
+                            pass
                             
                     datos_archivos.append(f"'{archivo}'{muestra}")
                 
-                # Ensamblamos la lista final para Groq
                 archivos_str = " | ".join(datos_archivos)
                 prompt += f" Devuelve ÚNICAMENTE un objeto JSON plano (sin anidar). Clave: Nombre del archivo, Valor: Nombre de la carpeta sugerida. Archivos: {archivos_str}"
                 
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
-                    model="llama-3.1-8b-instant", temperature=0.1, max_tokens=4096,
+                    model="llama-3.1-8b-instant", temperature=temp, max_tokens=4096,
                     response_format={"type": "json_object"}
                 )
                 plan_bruto = json.loads(chat_completion.choices[0].message.content)
                 if len(plan_bruto) == 1 and isinstance(list(plan_bruto.values())[0], dict): plan_bruto = list(plan_bruto.values())[0]
                 plan = {str(k): str(v) for k, v in plan_bruto.items()}
                 
-                # Indicamos en la UI qué modo se usó
+                if anti_spam:
+                    conteo_carpetas = {}
+                    carpeta_varios = "Varios (Auto-agrupado)" if idioma == "es" else "Others (Auto-grouped)"
+                    
+                    for c in plan.values():
+                        conteo_carpetas[c] = conteo_carpetas.get(c, 0) + 1
+                    
+                    for a, c in plan.items():
+                        if conteo_carpetas[c] < 3:
+                            plan[a] = carpeta_varios
+                
                 modo_str = "IA + Deep Scan" if leer_contenido else "IA (Llama 3.1)"
                 return {"status": "success", "plan": plan, "modo": modo_str}
         except Exception as e: return {"status": "error", "message": str(e)}
@@ -605,7 +620,7 @@ if __name__ == '__main__':
             return True
 
     current_window = webview.create_window(
-        'OrgPro v1.6 [Content Analyzer]',
+        'OrgPro v1.6 [Smart AI Update]',
         HTML_PATH,
         js_api=api_instance,
         width=900,

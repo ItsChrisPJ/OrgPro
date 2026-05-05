@@ -71,6 +71,10 @@
         input[type="text"], .api-key-input, input[type="time"] { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 4px; font-family: inherit; font-size: 0.9rem; outline: none; width: 100%; transition: border-color 0.2s, background 0.3s; color-scheme: dark;}
         body.light-mode input[type="time"] { color-scheme: light; }
         input[type="text"]:focus, .api-key-input:focus, input[type="time"]:focus { border-color: var(--accent); }
+        
+        /* CORRECCIÓN: Fondo de los menús select en modo oscuro y claro */
+        select option { background-color: var(--bg-dark); color: var(--text-main); }
+        
         .btn { background: var(--btn-bg); color: var(--accent); border: 1px solid var(--accent); padding: 8px 16px; border-radius: 4px; font-family: inherit; font-weight: bold; cursor: pointer; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn:hover:not(:disabled) { background: var(--accent); color: var(--bg-dark); box-shadow: 0 0 10px var(--accent-glow); }
         .btn:disabled { border-color: var(--text-muted); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
@@ -112,7 +116,7 @@
         .changelog-title { display: flex; align-items: center; gap: 8px; color: var(--accent); font-weight: bold; margin-bottom: 5px; }
     </style>
 </head>
-<body> 
+<body data-lang="es"> 
     <div class="arch-container">
         <nav class="waybar pywebview-drag-region">
             <div class="way-left no-drag">
@@ -186,7 +190,7 @@
 
                     <div style="flex-grow: 1; border: 1px solid var(--border-light); background: rgba(0,0,0,0.1); padding: 10px; overflow-y: auto; font-size: 0.85rem; border-radius: 4px;">
                         <ul id="lista" class="preview-list">
-                            <li style="color:var(--text-muted); justify-content:center; border:none; margin-top:20px;" data-i18n="li_drop">~/$ Arrastre un directorio para comenzar...</li>
+                            <li id="empty-state-li" style="color:var(--text-muted); justify-content:center; border:none; margin-top:20px;" data-i18n="li_drop">~/$ Arrastre un directorio para comenzar...</li>
                         </ul>
                     </div>
 
@@ -214,10 +218,25 @@
                         <span data-i18n="lbl_ia">IA Scanner (Groq)</span>
                         <label class="switch"><input type="checkbox" id="toggle-ia"><span class="slider"></span></label>
                     </div>
-                    <!-- NUEVO SWITCH DE DEEP SCAN (CONTENIDO) -->
+                    
                     <div class="switch-container" id="deep-scan-container" style="padding-left: 15px; border-left: 2px solid var(--accent); margin-top: -4px; opacity: 0.5;">
                         <span data-i18n="lbl_deep" style="font-size: 0.75rem; color: var(--text-muted);">↳ Deep Scan (Leer interior)</span>
                         <label class="switch" style="transform: scale(0.8);"><input type="checkbox" id="toggle-deep" disabled><span class="slider"></span></label>
+                    </div>
+                    
+                    <!-- NUEVOS CONTROLES DE IA -->
+                    <div class="switch-container" id="ai-creativity-container" style="padding-left: 15px; border-left: 2px solid var(--accent); margin-top: -4px; opacity: 0.5;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="lbl_creatividad">↳ Creatividad:</span>
+                        <select id="ai-creatividad" disabled style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 4px; font-size: 0.7rem; padding: 2px; outline: none; cursor: pointer;">
+                            <option value="estricto" data-i18n="opt_estricto">Estricta</option>
+                            <option value="balanceado" data-i18n="opt_balanceado" selected>Balanceada</option>
+                            <option value="creativo" data-i18n="opt_creativo">Creativa</option>
+                        </select>
+                    </div>
+
+                    <div class="switch-container" id="ai-antispam-container" style="padding-left: 15px; border-left: 2px solid var(--accent); margin-top: 4px; opacity: 0.5;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="lbl_antispam">↳ Anti-Spam (Mín 3)</span>
+                        <label class="switch" style="transform: scale(0.8);"><input type="checkbox" id="toggle-antispam" disabled checked><span class="slider"></span></label>
                     </div>
                     
                     <div class="switch-container" style="margin-top: 8px;">
@@ -238,7 +257,7 @@
                     <div style="margin-top: auto; border-top: 1px dashed var(--border-light); padding-top: 10px;">
                         <span style="font-size: 0.7rem; color: var(--accent);" data-i18n="lbl_rules">Rutas de Reglas Activas:</span>
                         <ul id="mini-rules-list" style="list-style: none; font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; max-height: 80px; overflow-y: auto;">
-                            <li>[Loading...]</li>
+                            <li data-i18n="rule_default">[Default Dictionary]</li>
                         </ul>
                     </div>
                 </div>
@@ -327,10 +346,10 @@
     <div id="m-graph" class="modal hidden">
         <div class="modal-c" style="max-width: 800px; width: 95%;">
              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 15px;">
-                <h3 style="color: var(--accent); margin: 0;">Visualizador de Red (.graph)</h3>
+                <h3 style="color: var(--accent); margin: 0;" data-i18n="mod_graph_title">Visualizador de Red (.graph)</h3>
                 <button onclick="cerrarGrafo()" style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem;">✖</button>
             </div>
-            <input type="text" id="buscador-grafo" placeholder="> grep -i 'archivo'" oninput="buscarEnGrafo()" style="margin-bottom: 10px;">
+            <input type="text" id="buscador-grafo" data-i18n="ph_search_graph" placeholder="> grep -i 'archivo'" oninput="buscarEnGrafo()" style="margin-bottom: 10px;">
             <div id="network-container" style="width: 100%; height: 500px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-light);"></div>
         </div>
     </div>
@@ -346,53 +365,26 @@
             </div>
             
             <div class="info-card" style="max-height: 50vh; overflow-y: auto;">
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    <div data-i18n="guide_fast"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path></svg>
-                    <div data-i18n="guide_ghost"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><rect x="5" y="2" width="14" height="20" rx="7"></rect><line x1="12" y1="6" x2="12" y2="10"></line></svg>
-                    <div data-i18n="guide_drag"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <div data-i18n="guide_dups"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    <div data-i18n="guide_trash"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    <div data-i18n="guide_cron"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <div data-i18n="guide_ai_prompt"></div>
-                </div>
-                <div class="info-row">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
-                    <div data-i18n="guide_undo"></div>
-                </div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><div data-i18n="guide_fast"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path></svg><div data-i18n="guide_ghost"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><rect x="5" y="2" width="14" height="20" rx="7"></rect><line x1="12" y1="6" x2="12" y2="10"></line></svg><div data-i18n="guide_drag"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><div data-i18n="guide_dups"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg><div data-i18n="guide_trash"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><div data-i18n="guide_cron"></div></div>
+                <!-- ACTUALIZADAS EN EL DICCIONARIO JS -->
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><div data-i18n="guide_ai_prompt"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg><div data-i18n="guide_ianame"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg><div data-i18n="guide_deep"></div></div>
+                <div class="info-row"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="color: var(--accent); flex-shrink:0; margin-top:2px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg><div data-i18n="guide_smart"></div></div>
             </div>
 
             <div style="display:flex; gap:15px; margin-bottom: 25px;">
                 <div style="flex:1;">
-                    <h4 style="color: var(--text-main); margin-bottom: 5px; display: flex; align-items: center; gap: 6px;">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                        API Key (Groq)
-                    </h4>
+                    <h4 style="color: var(--text-main); margin-bottom: 5px; display: flex; align-items: center; gap: 6px;"><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> API Key (Groq)</h4>
                     <p style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="guide_api"></p>
                 </div>
                 <div style="flex:1;">
-                    <h4 style="color: var(--text-main); margin-bottom: 5px; display: flex; align-items: center; gap: 6px;">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
-                        Reglas Propias
-                    </h4>
+                    <h4 style="color: var(--text-main); margin-bottom: 5px; display: flex; align-items: center; gap: 6px;"><svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg> Reglas Propias</h4>
                     <p style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="guide_rules"></p>
                 </div>
             </div>
@@ -400,7 +392,7 @@
         </div>
     </div>
 
-    <!-- Modal Changelog (Novedades v1.6) -->
+    <!-- Modal Changelog -->
     <div id="m-changelog" class="modal hidden">
         <div class="modal-c" style="max-width: 500px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px;">
@@ -413,23 +405,16 @@
             
             <div class="info-card" style="max-height: 50vh; overflow-y: auto;">
                 <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> <span data-i18n="clog_deep_title">Analizador de Contenido (Deep Scan)</span></div>
+                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> <span data-i18n="clog_deep_title">Analizador de Contenido (Deep Scan)</span></div>
                     <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_deep_desc">OrgPro ahora puede abrir tus archivos de texto, documentos y código para leer su interior y enviarle el contexto a la IA. Organización ultra-precisa aunque el archivo no tenga un nombre claro.</p>
                 </div>
-
                 <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> <span data-i18n="clog_dup_title">Caza-Duplicados (Hash MD5)</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_dup_desc">Escanea el contenido real de los archivos para encontrar duplicados exactos, permitiéndote limpiarlos con un clic.</p>
+                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> <span data-i18n="clog_smart_title">IA Control: Creatividad y Anti-Spam</span></div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_smart_desc">Ajusta el nivel de creatividad de la IA y activa el Anti-Spam para evitar que se creen carpetas con menos de 3 archivos, manteniendo tu PC impecable.</p>
                 </div>
-                
                 <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> <span data-i18n="clog_trash_title">Papelera Segura</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_trash_desc">Los archivos duplicados ya no se borran permanentemente. Se envían a un entorno seguro donde puedes restaurarlos en cualquier momento.</p>
-                </div>
-
-                <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> <span data-i18n="clog_cron_title">Auto-Limpieza (Cron)</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_cron_desc">Configura una hora exacta. OrgPro organizará tu carpeta automáticamente todos los días en segundo plano.</p>
+                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> <span data-i18n="clog_lang_title">Soporte Bilingüe 100% Nativo</span></div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_lang_desc">Nueva arquitectura interna que traduce en tiempo real la interfaz, las alertas y los mensajes de la terminal entre Español e Inglés (Ajustes).</p>
                 </div>
             </div>
 
@@ -437,28 +422,28 @@
         </div>
     </div>
 
-    <!-- Otros modales -->
+    <!-- Otros modales con data-i18n agregados -->
     <div id="m-alert" class="modal hidden"><div class="modal-c" style="max-width:400px;"><h3 id="alert-title" style="color:var(--accent);"></h3><p id="alert-msg"></p><button class="btn btn-full" onclick="closeCustomAlert()" style="margin-top: 15px;" data-i18n="btn_understood">OK</button></div></div>
-    <div id="m-confirm" class="modal hidden"><div class="modal-c" style="max-width:400px;"><h3 id="confirm-title" style="color:var(--accent);"></h3><p id="confirm-msg"></p><div style="display:flex; gap:10px; margin-top:15px;"><button id="btn-confirm-no" class="btn" style="flex:1;">No</button><button id="btn-confirm-yes" class="btn" style="flex:1; border-color: #f7768e; color: #f7768e;">Yes</button></div></div></div>
-    <div id="m-stats" class="modal hidden"><div class="modal-c" style="max-width:400px;"><button style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem; float:right;" onclick="cerrarEstadisticas()">✖</button><h3 style="color:var(--accent);">Stats</h3><p>Archivos: <span id="global-archivos"></span></p><p>MB: <span id="global-mb"></span></p><p>Mins: <span id="global-minutos"></span></p></div></div>
+    <div id="m-confirm" class="modal hidden"><div class="modal-c" style="max-width:400px;"><h3 id="confirm-title" style="color:var(--accent);"></h3><p id="confirm-msg"></p><div style="display:flex; gap:10px; margin-top:15px;"><button id="btn-confirm-no" class="btn" style="flex:1;" data-i18n="btn_no">No</button><button id="btn-confirm-yes" class="btn" style="flex:1; border-color: #f7768e; color: #f7768e;" data-i18n="btn_yes">Yes</button></div></div></div>
+    <div id="m-stats" class="modal hidden"><div class="modal-c" style="max-width:400px;"><button style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem; float:right;" onclick="cerrarEstadisticas()">✖</button><h3 style="color:var(--accent);">Stats</h3><p><span data-i18n="stat_files">Archivos:</span> <span id="global-archivos"></span></p><p>MB: <span id="global-mb"></span></p><p><span data-i18n="stat_mins">Mins:</span> <span id="global-minutos"></span></p></div></div>
     
     <div id="m-history" class="modal hidden">
         <div class="modal-c" style="max-width:550px;">
             <button style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem; float:right;" onclick="closeHistory()">✖</button>
-            <h3 style="color:var(--accent);">Historial</h3>
+            <h3 style="color:var(--accent);" data-i18n="hist_title">Historial</h3>
             <ul id="history-list" class="preview-list" style="max-height:300px; overflow-y:auto; margin-top: 10px;"></ul>
             <button class="btn btn-full" onclick="deshacerTodo()" style="margin-top: 15px; border-color: #f7768e; color: #f7768e;" data-i18n="btn_undo">Deshacer Todo</button>
         </div>
     </div>
     
-    <div id="m-rename" class="modal hidden"><div class="modal-c" style="max-width:500px;"><button style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem; float:right;" onclick="closeRename()">✖</button><h3 style="color:var(--accent);">IA Name</h3><ul id="rename-list" class="preview-list" style="max-height:250px; overflow-y:auto; margin-bottom: 15px;"></ul><button class="btn btn-full" onclick="aplicarRenombres()">Aplicar (.sh)</button></div></div>
-    <div id="m-ok" class="modal hidden"><div class="modal-c" style="max-width:400px;"><h3 style="color:#9ece6a;">[OK]</h3><p>Archivos: <span id="stat-archivos"></span> | Carpetas: <span id="stat-carpetas"></span></p><p>Tamaño: <span id="stat-tamano"></span></p><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn" onclick="mostrarGrafo()" style="flex:1;">Grafo</button><button class="btn" onclick="location.reload()" style="flex:1;">OK</button></div></div></div>
+    <div id="m-rename" class="modal hidden"><div class="modal-c" style="max-width:500px;"><button style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem; float:right;" onclick="closeRename()">✖</button><h3 style="color:var(--accent);" data-i18n="ianame_title">IA Name</h3><ul id="rename-list" class="preview-list" style="max-height:250px; overflow-y:auto; margin-bottom: 15px;"></ul><button class="btn btn-full" onclick="aplicarRenombres()" data-i18n="btn_apply_sh">Aplicar (.sh)</button></div></div>
+    <div id="m-ok" class="modal hidden"><div class="modal-c" style="max-width:400px;"><h3 style="color:#9ece6a;">[OK]</h3><p><span data-i18n="stat_files">Archivos:</span> <span id="stat-archivos"></span> | <span data-i18n="stat_folders">Carpetas:</span> <span id="stat-carpetas"></span></p><p><span data-i18n="stat_size">Tamaño:</span> <span id="stat-tamano"></span></p><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn" onclick="mostrarGrafo()" style="flex:1;" data-i18n="btn_graph">Grafo</button><button class="btn" onclick="location.reload()" style="flex:1;">OK</button></div></div></div>
     
     <div id="m-welcome" class="modal hidden">
         <div class="modal-c" style="max-width:400px;">
-            <h3 style="color:var(--accent);" data-i18n="splash_title">OrgPro 1.6 - Content Analyzer</h3>
+            <h3 style="color:var(--accent);" data-i18n="splash_title">OrgPro 1.6 - Smart AI Update</h3>
             <p data-i18n="splash_sub">Interfaz modular activada.</p>
-            <div id="welcome-api-alert" class="hidden" style="color:#f7768e; font-size:0.8rem; margin:10px 0;">[WARN] Requiere API Key en Config para funciones IA.</div>
+            <div id="welcome-api-alert" class="hidden" style="color:#f7768e; font-size:0.8rem; margin:10px 0;" data-i18n="splash_warn">[WARN] Requiere API Key en Config para funciones IA.</div>
             <button class="btn btn-full" onclick="cerrarBienvenida()" data-i18n="splash_btn">Iniciar Sesión (root)</button>
         </div>
     </div>
@@ -470,12 +455,15 @@
                 term_title: "[Terminal / Análisis]", term_wait: "Esperando entrada...",
                 ph_path: "Ruta: C:\\Usuarios\\TuNombre\\Descargas (o arrastra aquí)",
                 ph_ai: "Instrucciones IA (Ej: Agrupa por cliente)...",
+                ph_search_graph: "> grep -i 'archivo'",
                 btn_ianame: "IA Name", btn_analyze: "Analizar", btn_dups: "Caza-Duplicados",
                 li_drop: "~/$ Arrastre un directorio para comenzar...",
                 prog_op: "Progreso de Operación", btn_exec: "Ejecutar Organización",
                 daem_title: "[Daemons / Servicios]", lbl_ia: "IA Scanner (Groq)", lbl_deep: "↳ Deep Scan (Leer interior)",
+                lbl_creatividad: "↳ Creatividad:", opt_estricto: "Estricta", opt_balanceado: "Balanceada", opt_creativo: "Creativa",
+                lbl_antispam: "↳ Anti-Spam (Mín 3)",
                 lbl_ghost: "Watchdog (Fantasma)", lbl_cron: "Cron (Auto-Limpieza)", lbl_notif: "Notificaciones Sys",
-                lbl_rules: "Rutas de Reglas Activas:", sys_title: "[System Log]",
+                lbl_rules: "Rutas de Reglas Activas:", sys_title: "[System Log]", rule_default: "[Default Dictionary]",
                 conf_title: "/etc/orgpro/config", conf_lang: "Idioma del Sistema:",
                 conf_theme: "Temas Colorways:", conf_api: "API Key de Groq:", btn_save: "Guardar",
                 conf_prio: "Reglas de Prioridad (.ext -> Dir):",
@@ -486,34 +474,47 @@
                 guide_ghost: "<strong style='color: var(--text-main);'>Modo Fantasma:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Actívalo y cierra la ventana. OrgPro vive en la bandeja del sistema.</span>",
                 guide_drag: "<strong style='color: var(--text-main);'>Arrastrar y Soltar:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Arrastra una carpeta desde el escritorio a la terminal.</span>",
                 guide_dups: "<strong style='color: var(--text-main);'>Caza-Duplicados:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Busca y mueve archivos idénticos a la Papelera usando Hash MD5.</span>",
-                guide_trash: "<strong style='color: var(--text-main);'>Papelera Segura:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Los duplicados no se borran; se van a una carpeta oculta (.orgpro_trash). Restáuralos cuando quieras.</span>",
-                guide_cron: "<strong style='color: var(--text-main);'>Auto-Limpieza (Cron):</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Programa una hora diaria para que OrgPro organice la carpeta seleccionada automáticamente.</span>",
-                guide_ai_prompt: "<strong style='color: var(--text-main);'>Instrucciones IA:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Escribe un prompt personalizado (ej: 'Agrupa por año') antes de analizar.</span>",
+                guide_trash: "<strong style='color: var(--text-main);'>Papelera Segura:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Los duplicados no se borran; se van a una oculta (.orgpro_trash). Restáuralos cuando quieras.</span>",
+                guide_cron: "<strong style='color: var(--text-main);'>Auto-Limpieza (Cron):</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Programa una hora para organizar carpetas en segundo plano.</span>",
+                guide_ai_prompt: "<strong style='color: var(--text-main);'>Instrucciones IA:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Escribe un prompt para guiar a la IA (ej: 'Agrupa por año').</span>",
+                guide_ianame: "<strong style='color: var(--text-main);'>Botón IA Name:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Analiza nombres corruptos (ej. IMG_01.jpg) y sugiere nombres legibles y profesionales de forma automática.</span>",
+                guide_deep: "<strong style='color: var(--text-main);'>Deep Scan (Leer interior):</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Si está activo, Python leerá el contenido de documentos de texto/código y se lo enviará a la IA para clasificar con precisión extrema.</span>",
+                guide_smart: "<strong style='color: var(--text-main);'>Creatividad & Anti-Spam:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Ajusta cómo piensa la IA. 'Estricta' usa carpetas genéricas, 'Creativa' crea subcategorías. Activa Anti-Spam para agrupar archivos huérfanos en 'Varios'.</span>",
                 guide_undo: "<strong style='color: var(--text-main);'>Deshacer Selectivo:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>En el Historial, revierte toda la operación o devuelve archivos uno por uno.</span>",
                 guide_api: "Regístrate en <a href='#' style='color: var(--accent); text-decoration: none; font-weight: bold;'>console.groq.com</a>, genera una key y pégala en Ajustes (⚙️).",
-                guide_rules: "En Ajustes (⚙️) añade reglas que tienen prioridad. Ej: <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>.pdf</code> ➔ <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>Universidad</code>.",
+                guide_rules: "En Ajustes (⚙️) añade reglas prioritarias. Ej: <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>.pdf</code> ➔ <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>Universidad</code>.",
                 btn_understood: "Entendido", btn_undo: "Deshacer Todo", btn_enjoy: "¡Genial!",
-                splash_title: "OrgPro 1.6 - Content Analyzer", splash_sub: "Interfaz modular activada.", splash_btn: "Iniciar Sesión (root)",
+                splash_title: "OrgPro 1.6 - Smart AI Update", splash_sub: "Interfaz modular activada.", splash_btn: "Iniciar Sesión (root)", splash_warn: "[WARN] Requiere API Key en Config para funciones IA.",
                 clog_title: "Novedades v1.6",
+                clog_smart_title: "IA Control: Creatividad y Anti-Spam", clog_smart_desc: "Ajusta el nivel de creatividad de la IA y activa el Anti-Spam para evitar que se creen carpetas con menos de 3 archivos, manteniendo tu PC impecable.",
                 clog_deep_title: "Analizador de Contenido (Deep Scan)", clog_deep_desc: "OrgPro ahora puede abrir tus archivos de texto, documentos y código para leer su interior y enviarle el contexto a la IA. Organización ultra-precisa aunque el archivo no tenga un nombre claro.",
-                clog_dup_title: "Caza-Duplicados (Hash MD5)", clog_dup_desc: "Nuevo motor que escanea el contenido real de los archivos para encontrar duplicados exactos, permitiéndote limpiarlos con un clic.",
-                clog_trash_title: "Papelera Segura", clog_trash_desc: "Los archivos duplicados ya no se borran permanentemente. Se envían a un entorno seguro donde puedes restaurarlos en cualquier momento.",
-                clog_cron_title: "Auto-Limpieza (Cron)", clog_cron_desc: "Configura una hora exacta. OrgPro organizará tu carpeta automáticamente todos los días en segundo plano.",
-                clog_ai_title: "Instrucciones IA (Prompts)", clog_ai_desc: "Toma el control de la Inteligencia Artificial diciéndole exactamente cómo quieres agrupar tus archivos antes del análisis.",
-                clog_undo_title: "Deshacer Selectivo", clog_undo_desc: "El historial ahora permite revertir archivos uno por uno sin afectar el resto de la organización.",
-                clog_lang_title: "Soporte Multi-Idioma", clog_lang_desc: "Nueva arquitectura interna que soporta cambio en tiempo real entre Español e Inglés (Ajustes)."
+                clog_lang_title: "Soporte Bilingüe 100% Nativo", clog_lang_desc: "Nueva arquitectura interna que traduce en tiempo real la interfaz, las alertas y los mensajes de la terminal entre Español e Inglés (Ajustes).",
+                
+                // Claves dinámicas para JS
+                stat_files: "Archivos:", stat_folders: "Carpetas:", stat_size: "Tamaño:", stat_mins: "Mins:",
+                hist_title: "Historial", ianame_title: "IA Name", btn_apply_sh: "Aplicar (.sh)", btn_graph: "Grafo",
+                mod_graph_title: "Visualizador de Red (.graph)", btn_yes: "Sí", btn_no: "No",
+                
+                log_path_loaded: "Ruta cargada.", log_analyzing: "Analizando...", log_mv: "Ejecutando mv...", log_error: "Error.",
+                log_err_empty: "Error: Ruta vacía", log_start_analyze: "Iniciando análisis en", log_analyze_done: "Análisis finalizado:", 
+                log_start_mv: "Iniciando movimiento de archivos...", log_mv_success: "Organización exitosa:",
+                msg_re_analyze: "Requiere re-análisis.", msg_no_rules: "Sin reglas custom.", msg_empty_trash: "¿Eliminar PERMANENTEMENTE los archivos en la papelera?",
+                msg_undo_all: "¿Ejecutar operación deshacer global?", msg_req_path: "Aviso: Indica una ruta.", msg_req_path_cron: "Debes seleccionar una ruta antes de activar el Cron."
             },
             en: {
                 nav_info: "Help", nav_config: "Settings", nav_stats: "Stats", nav_trash: "Trash", nav_news: "v1.6",
                 term_title: "[Terminal / Analysis]", term_wait: "Waiting for input...",
                 ph_path: "Path: C:\\Users\\Name\\Downloads (or drop here)",
                 ph_ai: "AI Rules (Ex: Group by client name)...",
+                ph_search_graph: "> grep -i 'file'",
                 btn_ianame: "AI Name", btn_analyze: "Analyze", btn_dups: "Find Duplicates",
                 li_drop: "~/$ Drop a directory to start...",
                 prog_op: "Operation Progress", btn_exec: "Execute Organization",
                 daem_title: "[Daemons / Services]", lbl_ia: "AI Scanner (Groq)", lbl_deep: "↳ Deep Scan (Read inside)",
+                lbl_creatividad: "↳ Creativity:", opt_estricto: "Strict", opt_balanceado: "Balanced", opt_creativo: "Creative",
+                lbl_antispam: "↳ Anti-Spam (Min 3)",
                 lbl_ghost: "Watchdog (Ghost)", lbl_cron: "Cron (Auto-Clean)", lbl_notif: "Sys Notifications",
-                lbl_rules: "Active Rule Paths:", sys_title: "[System Log]",
+                lbl_rules: "Active Rule Paths:", sys_title: "[System Log]", rule_default: "[Default Dictionary]",
                 conf_title: "/etc/orgpro/config", conf_lang: "System Language:",
                 conf_theme: "Theme Colorways:", conf_api: "Groq API Key:", btn_save: "Save",
                 conf_prio: "Priority Rules (.ext -> Dir):",
@@ -527,23 +528,40 @@
                 guide_trash: "<strong style='color: var(--text-main);'>Safe Trash:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Duplicates aren't deleted; they go to a hidden folder (.orgpro_trash). Restore them anytime.</span>",
                 guide_cron: "<strong style='color: var(--text-main);'>Auto-Clean (Cron):</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Schedule a daily time for OrgPro to automatically organize the selected folder.</span>",
                 guide_ai_prompt: "<strong style='color: var(--text-main);'>Custom AI Rules:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Write a custom prompt (e.g., 'Group by year') before analyzing.</span>",
+                guide_ianame: "<strong style='color: var(--text-main);'>IA Name Button:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>Analyzes corrupt or messy filenames and suggests clean, professional alternatives.</span>",
+                guide_deep: "<strong style='color: var(--text-main);'>Deep Scan:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>If active, Python reads the contents of text/code documents to provide the AI with perfect context.</span>",
+                guide_smart: "<strong style='color: var(--text-main);'>Creativity & Anti-Spam:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>'Strict' mode uses generic folders, 'Creative' makes subcategories. Anti-Spam groups orphan files in 'Others'.</span>",
                 guide_undo: "<strong style='color: var(--text-main);'>Cherry-pick Undo:</strong> <span style='color: var(--text-muted); font-size: 0.85rem;'>In History, undo the whole batch or revert files one by one.</span>",
                 guide_api: "Get your key at <a href='#' style='color: var(--accent); text-decoration: none; font-weight: bold;'>console.groq.com</a> and paste it in Settings (⚙️).",
                 guide_rules: "In Settings (⚙️) add custom priority rules. Ex: <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>.pdf</code> ➔ <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>University</code>.",
                 btn_understood: "Understood", btn_undo: "Undo All", btn_enjoy: "Awesome!",
-                splash_title: "OrgPro 1.6 - Content Analyzer", splash_sub: "Modular interface activated.", splash_btn: "Login (root)",
+                splash_title: "OrgPro 1.6 - Smart AI Update", splash_sub: "Modular interface activated.", splash_btn: "Login (root)", splash_warn: "[WARN] API Key required in Settings for AI functions.",
                 clog_title: "What's new in v1.6",
+                clog_smart_title: "AI Control: Creativity & Anti-Spam", clog_smart_desc: "Adjust the AI's creativity level and toggle Anti-Spam to prevent creating folders with less than 3 files, keeping your PC clean.",
                 clog_deep_title: "Content Analyzer (Deep Scan)", clog_deep_desc: "OrgPro can now open your text files, documents, and code to read inside and send context to the AI. Ultra-precise organization even if the file lacks a clear name.",
-                clog_dup_title: "Smart Deduplicator (MD5 Hash)", clog_dup_desc: "New engine scans actual file contents for exact duplicates, allowing 1-click cleanups.",
-                clog_trash_title: "Safe Trash", clog_trash_desc: "Duplicate files are no longer permanently deleted. They go to a safe environment where you can restore them.",
-                clog_cron_title: "Auto-Clean (Cron)", clog_cron_desc: "Set an exact time. OrgPro will automatically organize your folder every day in the background.",
-                clog_ai_title: "AI Instructions (Prompts)", clog_ai_desc: "Take control of the AI by telling it exactly how you want your files grouped before analyzing.",
-                clog_undo_title: "Cherry-pick Undo", clog_undo_desc: "The history panel now lets you revert files one by one without affecting the rest of the batch.",
-                clog_lang_title: "Multi-Language Support", clog_lang_desc: "New internal architecture supports real-time switching between English and Spanish (Settings)."
+                clog_lang_title: "100% Native Bilingual Support", clog_lang_desc: "New internal architecture translates the interface, alerts, and terminal messages between English and Spanish in real-time (Settings).",
+                
+                // JS dynamic keys
+                stat_files: "Files:", stat_folders: "Folders:", stat_size: "Size:", stat_mins: "Mins:",
+                hist_title: "History", ianame_title: "IA Name", btn_apply_sh: "Apply (.sh)", btn_graph: "Graph",
+                mod_graph_title: "Network Visualizer (.graph)", btn_yes: "Yes", btn_no: "No",
+                
+                log_path_loaded: "Path loaded.", log_analyzing: "Analyzing...", log_mv: "Executing mv...", log_error: "Error.",
+                log_err_empty: "Error: Empty path", log_start_analyze: "Starting analysis in", log_analyze_done: "Analysis completed:", 
+                log_start_mv: "Starting file movement...", log_mv_success: "Organization successful:",
+                msg_re_analyze: "Re-analysis required.", msg_no_rules: "No custom rules.", msg_empty_trash: "PERMANENTLY delete files in trash?",
+                msg_undo_all: "Execute global undo operation?", msg_req_path: "Notice: Provide a path.", msg_req_path_cron: "You must select a path before activating Cron."
             }
         };
 
+        // Función Helper para obtener texto traducido en JS
+        function getText(key) {
+            const lang = document.body.getAttribute('data-lang') || 'es';
+            return i18n[lang][key] || key;
+        }
+
         function setLanguage(lang, callBackend = true) {
+            document.body.setAttribute('data-lang', lang); 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (i18n[lang][key]) {
@@ -595,13 +613,13 @@
             document.getElementById('icon-moon').style.display = isLightMode ? 'none' : 'inline-block';
             document.getElementById('icon-sun').style.display = isLightMode ? 'inline-block' : 'none';
             if (window.pywebview && window.pywebview.api) { window.pywebview.api.guardar_dark_mode(!isLightMode); }
-            agregarLog(`Cambio de UI: Modo ${isLightMode ? 'Claro' : 'Oscuro'}`);
+            agregarLog(`UI Switch: ${isLightMode ? 'Light' : 'Dark'} Mode`);
         }
 
         function cambiarTema(themeName) {
             document.body.setAttribute('data-theme', themeName);
             if (window.pywebview && window.pywebview.api) { window.pywebview.api.guardar_tema_color(themeName); }
-            agregarLog(`Tema cambiado: ${themeName}`);
+            agregarLog(`Theme changed: ${themeName}`);
         }
 
         const statusEl = document.getElementById('status');
@@ -630,7 +648,7 @@
             document.getElementById('alert-title').innerText = title;
             document.getElementById('alert-msg').innerText = message;
             document.getElementById('m-alert').classList.remove('hidden');
-            agregarLog(`ALERTA: ${title} - ${message}`, "error");
+            agregarLog(`ALERT: ${title} - ${message}`, "error");
         }
         function closeCustomAlert() { document.getElementById('m-alert').classList.add('hidden'); }
         
@@ -660,7 +678,7 @@
         async function saveApiKey() {
             const key = document.getElementById('api-key').value.trim();
             await window.pywebview.api.guardar_api_key(key);
-            agregarLog("API Key actualizada.", "success");
+            agregarLog("API Key updated.", "success");
             toggleConfig();
         }
         
@@ -669,8 +687,8 @@
             const miniList = document.getElementById('mini-rules-list');
             list.innerHTML = ''; miniList.innerHTML = '';
             if (Object.keys(rules).length === 0) {
-                list.innerHTML = '<li style="color:var(--text-muted);">Sin reglas custom.</li>';
-                miniList.innerHTML = '<li>[Default Dictionary]</li>';
+                list.innerHTML = `<li style="color:var(--text-muted);">${getText('msg_no_rules')}</li>`;
+                miniList.innerHTML = `<li data-i18n="rule_default">${getText('rule_default')}</li>`;
                 return;
             }
             for (const [ext, folder] of Object.entries(rules)) {
@@ -687,36 +705,37 @@
                 document.getElementById('new-ext').value = '';
                 document.getElementById('new-folder').value = '';
                 renderRulesList(config.rules || {});
-                agregarLog(`Regla añadida: ${ext} -> ${folder}`);
+                agregarLog(`Rule added: ${ext} -> ${folder}`);
             }
         }
         async function deleteRule(ext) {
             const config = await window.pywebview.api.borrar_regla_usuario(ext);
             renderRulesList(config.rules || {});
-            agregarLog(`Regla eliminada: ${ext}`);
+            agregarLog(`Rule deleted: ${ext}`);
         }
 
         async function examinar() {
             const carpeta = await window.pywebview.api.seleccionar_carpeta();
             if (carpeta) {
                 document.getElementById('ruta').value = carpeta;
-                statusEl.innerText = "Ruta cargada.";
-                agregarLog(`Ruta objetivo: ${carpeta}`);
+                statusEl.innerText = getText('log_path_loaded');
+                agregarLog(`Target path: ${carpeta}`);
             }
         }
 
-        // --- NUEVO: Logica para pasar leerContenido al backend ---
         async function analizar() {
             const ruta = document.getElementById('ruta').value.trim();
             const usarIA = document.getElementById('toggle-ia').checked;
             const leerContenido = document.getElementById('toggle-deep').checked;
+            const creatividad = document.getElementById('ai-creatividad').value;
+            const antiSpam = document.getElementById('toggle-antispam').checked;
             const contexto_ia = document.getElementById('ai-prompt').value.trim(); 
 
-            if (!ruta) { agregarLog("Error: Ruta vacía", "error"); return; }
-            statusEl.innerText = "Analizando...";
-            agregarLog(`Iniciando análisis en ${ruta}...`);
+            if (!ruta) { agregarLog(getText('log_err_empty'), "error"); return; }
+            statusEl.innerText = getText('log_analyzing');
+            agregarLog(`${getText('log_start_analyze')} ${ruta}...`);
             
-            const res = await window.pywebview.api.analizar_archivos(ruta, usarIA, contexto_ia, leerContenido);
+            const res = await window.pywebview.api.analizar_archivos(ruta, usarIA, contexto_ia, leerContenido, creatividad, antiSpam);
             
             if (res.status === "success") {
                 planActual = res.plan;
@@ -728,19 +747,19 @@
                     count++;
                 }
                 document.getElementById('btn-org').disabled = false;
-                statusEl.innerText = "Análisis completado.";
-                agregarLog(`Análisis finalizado: ${count} archivos encontrados (${res.modo}).`, "success");
+                statusEl.innerText = getText('log_analyze_done');
+                agregarLog(`${getText('log_analyze_done')} ${count} files (${res.modo}).`, "success");
             } else {
-                showCustomAlert("Error en Análisis", res.message);
-                statusEl.innerText = "Error.";
+                showCustomAlert("Analysis Error", res.message);
+                statusEl.innerText = getText('log_error');
             }
         }
 
         async function organizar() {
             mostrarBarra();
-            statusEl.innerText = "Ejecutando mv...";
+            statusEl.innerText = getText('log_mv');
             document.getElementById('btn-org').disabled = true;
-            agregarLog("Iniciando movimiento de archivos...");
+            agregarLog(getText('log_start_mv'));
             const res = await window.pywebview.api.organizar_archivos(document.getElementById('ruta').value, planActual);
             if (res.status === "success") {
                 ocultarBarra();
@@ -749,15 +768,15 @@
                 document.getElementById('stat-tamano').innerText = res.stats.tamano;
                 lastGraphData = res.graph; 
                 document.getElementById('m-ok').classList.remove('hidden');
-                agregarLog(`Organización exitosa: ${res.stats.archivos} movidos.`, "success");
+                agregarLog(`${getText('log_mv_success')} ${res.stats.archivos} files moved.`, "success");
             }
         }
 
         async function buscarDuplicados() {
             const ruta = document.getElementById('ruta').value.trim();
-            if (!ruta) { agregarLog("Error: Ruta requerida para buscar duplicados.", "error"); return; }
+            if (!ruta) { agregarLog(getText('log_err_empty'), "error"); return; }
             
-            agregarLog(`Calculando Hash MD5 en ${ruta}... Esto puede tardar.`);
+            agregarLog(`Calculating MD5 Hash in ${ruta}...`);
             const res = await window.pywebview.api.buscar_duplicados(ruta);
             
             if (res.status === "success") {
@@ -785,13 +804,13 @@
                 }
 
                 if (found > 0) {
-                    agregarLog(`Se encontraron ${found} posibles duplicados.`);
+                    agregarLog(`Found ${found} duplicates.`);
                     document.getElementById('m-dups').classList.remove('hidden');
                 } else {
-                    agregarLog(`¡Carpeta limpia! No hay archivos idénticos.`, "success");
+                    agregarLog(`Clean folder! No identical files.`, "success");
                 }
             } else {
-                agregarLog("Error buscando duplicados: " + res.message, "error");
+                agregarLog("Error finding duplicates: " + res.message, "error");
             }
         }
 
@@ -804,17 +823,17 @@
             if (aBorrar.length === 0) return;
             
             document.getElementById('m-dups').classList.add('hidden');
-            agregarLog(`Enviando ${aBorrar.length} archivos a cuarentena...`);
+            agregarLog(`Sending ${aBorrar.length} files to quarantine...`);
             
             const res = await window.pywebview.api.enviar_a_papelera(ruta, aBorrar);
             if (res.status === "success") {
-                agregarLog(`Duplicados limpiados: ${res.cantidad} movidos a Papelera.`, "success");
+                agregarLog(`Duplicates cleaned: ${res.cantidad} moved to Trash.`, "success");
             }
         }
 
         async function verPapelera() {
             const ruta = document.getElementById('ruta').value.trim();
-            if (!ruta) { agregarLog("Aviso: Indica una ruta para ver su papelera.", "error"); return; }
+            if (!ruta) { agregarLog(getText('msg_req_path'), "error"); return; }
             
             const res = await window.pywebview.api.ver_papelera(ruta);
             const list = document.getElementById('trash-list');
@@ -825,23 +844,23 @@
                     const safepath = arch.replace(/'/g, "\\'"); 
                     list.innerHTML += `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
                         <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${arch}</span>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; border-color:#9ece6a; color:#9ece6a;" onclick="restaurarDePapelera('${safepath}')" title="Restaurar Archivo">↩</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; border-color:#9ece6a; color:#9ece6a;" onclick="restaurarDePapelera('${safepath}')" title="Restore">↩</button>
                     </li>`;
                 });
                 document.getElementById('m-trash').classList.remove('hidden');
             } else {
-                agregarLog("La papelera de esta ruta está vacía.", "success");
+                agregarLog("Trash is empty.", "success");
             }
         }
 
         async function vaciarPapelera() {
             const ruta = document.getElementById('ruta').value.trim();
-            const ok = await showCustomConfirm("Vaciar Papelera", "¿Eliminar PERMANENTEMENTE los archivos en la papelera?");
+            const ok = await showCustomConfirm(getText('trash_title'), getText('msg_empty_trash'));
             if (ok) {
                 document.getElementById('m-trash').classList.add('hidden');
                 const res = await window.pywebview.api.vaciar_papelera(ruta);
                 if(res.status === "success") {
-                    agregarLog("Papelera vaciada por completo.", "success");
+                    agregarLog("Trash emptied completely.", "success");
                 }
             }
         }
@@ -850,7 +869,7 @@
             const ruta = document.getElementById('ruta').value.trim();
             const res = await window.pywebview.api.restaurar_papelera(ruta, archivo);
             if(res.status === "success") {
-                agregarLog(`Archivo restaurado: ${archivo}`, "success");
+                agregarLog(`File restored: ${archivo}`, "success");
                 verPapelera(); 
             }
         }
@@ -863,16 +882,16 @@
             if (act) {
                 if (!ruta) {
                     document.getElementById('toggle-cron').checked = false;
-                    agregarLog("Debes seleccionar una ruta antes de activar el Cron.", "error");
+                    agregarLog(getText('msg_req_path_cron'), "error");
                     return;
                 }
                 settings.classList.remove('hidden');
                 saveCronTime(); 
-                agregarLog("Cron (Auto-Limpieza) Activado para esta ruta.", "success");
+                agregarLog("Cron (Auto-Clean) active for this path.", "success");
             } else {
                 settings.classList.add('hidden');
                 await window.pywebview.api.guardar_cron(false, "", "18:00");
-                agregarLog("Cron Desactivado.");
+                agregarLog("Cron Deactivated.");
             }
         }
 
@@ -882,7 +901,7 @@
             const activo = document.getElementById('toggle-cron').checked;
             if(activo && ruta) {
                 await window.pywebview.api.guardar_cron(true, ruta, hora);
-                agregarLog(`Limpieza programada configurada a las ${hora} hrs.`);
+                agregarLog(`Scheduled clean set to ${hora} hrs.`);
             }
         }
 
@@ -928,7 +947,7 @@
 
         async function showHistory() {
             const ruta = document.getElementById('ruta').value.trim();
-            if (!ruta) { agregarLog("Error: Ruta requerida para historial.", "error"); return; }
+            if (!ruta) { agregarLog(getText('msg_req_path'), "error"); return; }
             const res = await window.pywebview.api.obtener_historial(ruta);
             const list = document.getElementById('history-list');
             list.innerHTML = '';
@@ -939,22 +958,22 @@
                     
                     list.innerHTML += `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
                         <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${parts.pop()} <span style="color:var(--accent);">[${parts.pop()}]</span></span>
-                        <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; border-radius: 4px;" onclick="deshacerIndividual('${safepath}')" title="Revertir este archivo">↩</button>
+                        <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; border-radius: 4px;" onclick="deshacerIndividual('${safepath}')" title="Revert">↩</button>
                     </li>`;
                 }
                 document.getElementById('m-history').classList.remove('hidden');
-            } else { agregarLog("Historial vacío.", "error"); }
+            } else { agregarLog("Empty history.", "error"); }
         }
         function closeHistory() { document.getElementById('m-history').classList.add('hidden'); }
 
         async function deshacerTodo() {
             closeHistory();
-            const ok = await showCustomConfirm("Revertir Todo", "¿Ejecutar operación deshacer global?");
+            const ok = await showCustomConfirm(getText('hist_title'), getText('msg_undo_all'));
             if (ok) {
-                agregarLog("Revirtiendo TODOS los archivos...");
+                agregarLog("Reverting ALL files...");
                 const res = await window.pywebview.api.deshacer_organizacion(document.getElementById('ruta').value);
                 if (res.status === "success") {
-                    agregarLog("Archivos revertidos.", "success");
+                    agregarLog("Files reverted.", "success");
                     setTimeout(() => location.reload(), 2000);
                 }
             }
@@ -962,13 +981,13 @@
 
         async function deshacerIndividual(ruta_archivo) {
             const ruta = document.getElementById('ruta').value.trim();
-            agregarLog(`Revirtiendo archivo individual...`);
+            agregarLog(`Reverting single file...`);
             const res = await window.pywebview.api.deshacer_organizacion(ruta, ruta_archivo);
             if (res.status === "success") {
-                agregarLog("Archivo individual revertido con éxito.", "success");
+                agregarLog("File reverted successfully.", "success");
                 showHistory(); 
             } else {
-                agregarLog("Error al revertir: " + res.message, "error");
+                agregarLog("Undo error: " + res.message, "error");
             }
         }
 
@@ -977,7 +996,7 @@
             const chk = document.getElementById('toggle-fantasma');
             if (chk) chk.checked = res.activo;
             if (res.activo && res.carpeta) {
-                agregarLog(`Daemon Fantasma activo en: ${res.carpeta.split('\\').pop()}`, "success");
+                agregarLog(`Watchdog active in: ${res.carpeta.split('\\').pop()}`, "success");
             }
         }
         function actualizar_ui_fantasma(activo) { document.getElementById('toggle-fantasma').checked = activo; }
@@ -988,46 +1007,46 @@
                 const ruta = await window.pywebview.api.seleccionar_carpeta();
                 if (!ruta) { chk.checked = false; return; }
                 const res = await window.pywebview.api.toggle_fantasma(ruta, true);
-                if (res.status === "success") { agregarLog(`Daemon Fantasma iniciado en ${ruta}`, "success"); }
+                if (res.status === "success") { agregarLog(`Watchdog started in ${ruta}`, "success"); }
             } else {
                 await window.pywebview.api.toggle_fantasma("", false);
-                agregarLog("Daemon Fantasma detenido.");
+                agregarLog("Watchdog stopped.");
             }
         }
 
         async function toggleModoSilencio() {
             const act = document.getElementById('toggle-silencio').checked;
             await window.pywebview.api.guardar_modo_silencio(act);
-            agregarLog(`Notificaciones nativas ${act ? 'silenciadas' : 'activas'}.`);
+            agregarLog(`Native notifications ${act ? 'muted' : 'active'}.`);
         }
 
         let sugerenciasActuales = {};
         async function abrirRenombrado() {
             const ruta = document.getElementById('ruta').value.trim();
             if (!ruta) return;
-            agregarLog("Solicitando sugerencias a IA..."); mostrarBarra();
+            agregarLog("Requesting AI suggestions..."); mostrarBarra();
             const res = await window.pywebview.api.sugerir_nombres(ruta);
             ocultarBarra();
             if (res.status === "success") {
                 sugerenciasActuales = res.sugerencias;
                 const list = document.getElementById('rename-list'); list.innerHTML = '';
-                if (Object.keys(sugerenciasActuales).length === 0) { agregarLog("Nombres limpios, IA no requerida."); return; }
+                if (Object.keys(sugerenciasActuales).length === 0) { agregarLog("Clean names, AI not required."); return; }
                 for (const [ori, nue] of Object.entries(sugerenciasActuales)) {
                     list.innerHTML += `<li style="display:flex; align-items:center; gap:10px;"><input type="checkbox" value="${ori}" checked><span style="text-decoration:line-through; color:var(--text-muted);">${ori}</span><span style="color:var(--accent);">-> ${nue}</span></li>`;
                 }
                 document.getElementById('m-rename').classList.remove('hidden');
-            } else { agregarLog("Fallo en IA.", "error"); }
+            } else { agregarLog("AI Fail.", "error"); }
         }
         function closeRename() { document.getElementById('m-rename').classList.add('hidden'); }
         async function aplicarRenombres() {
             const sel = {};
             document.querySelectorAll('#rename-list input[type="checkbox"]:checked').forEach(chk => { sel[chk.value] = sugerenciasActuales[chk.value]; });
             if (Object.keys(sel).length === 0) return;
-            closeRename(); agregarLog("Aplicando renombrado...");
+            closeRename(); agregarLog("Applying rename...");
             const res = await window.pywebview.api.aplicar_renombres(document.getElementById('ruta').value, sel);
             if (res.status === "success") {
-                agregarLog(`Renombrado completado: ${res.cantidad} archivos.`, "success");
-                document.getElementById('lista').innerHTML = '<li>Requiere re-análisis.</li>';
+                agregarLog(`Rename completed: ${res.cantidad} files.`, "success");
+                document.getElementById('lista').innerHTML = `<li>${getText('msg_re_analyze')}</li>`;
                 document.getElementById('btn-org').disabled = true;
             }
         }
@@ -1043,22 +1062,29 @@
             }
             if (path && path.trim() !== "") {
                 document.getElementById('ruta').value = path;
-                agregarLog(`Ruta arrastrada: ${path}`);
+                agregarLog(`Path dropped: ${path}`);
                 analizar();
             }
         });
 
-        // --- NUEVO: Lógica visual del toggle Deep Scan ---
         document.getElementById('toggle-ia').addEventListener('change', function() {
             const deepScanContainer = document.getElementById('deep-scan-container');
             const deepScanToggle = document.getElementById('toggle-deep');
+            
+            const creativityContainer = document.getElementById('ai-creativity-container');
+            const creativitySelect = document.getElementById('ai-creatividad');
+            
+            const antispamContainer = document.getElementById('ai-antispam-container');
+            const antispamToggle = document.getElementById('toggle-antispam');
+
             if (this.checked) {
-                deepScanContainer.style.opacity = '1';
-                deepScanToggle.disabled = false;
+                deepScanContainer.style.opacity = '1'; deepScanToggle.disabled = false;
+                creativityContainer.style.opacity = '1'; creativitySelect.disabled = false;
+                antispamContainer.style.opacity = '1'; antispamToggle.disabled = false;
             } else {
-                deepScanContainer.style.opacity = '0.5';
-                deepScanToggle.checked = false;
-                deepScanToggle.disabled = true;
+                deepScanContainer.style.opacity = '0.5'; deepScanToggle.checked = false; deepScanToggle.disabled = true;
+                creativityContainer.style.opacity = '0.5'; creativitySelect.disabled = true;
+                antispamContainer.style.opacity = '0.5'; antispamToggle.disabled = true;
             }
         });
 
@@ -1082,7 +1108,7 @@
                 document.getElementById('toggle-cron').checked = true;
                 document.getElementById('cron-settings').classList.remove('hidden');
                 document.getElementById('cron-time').value = cronState.hora;
-                agregarLog("Cron Timer Activo en background.");
+                agregarLog("Cron Timer Active in background.");
             }
 
             if (!config.v14_vista) {
@@ -1091,8 +1117,8 @@
             }
             renderRulesList(config.rules || {});
             
-            agregarLog("System Boot: OrgPro v1.6 (Content Analyzer)");
-            agregarLog("Módulos: Deep Scan, IA, Watchdog, Cron, Hash, Trash");
+            agregarLog("System Boot: OrgPro v1.6 (Smart AI)");
+            agregarLog("Modules: Deep Scan, Temperature, Anti-Spam, Watchdog, Cron, Hash, Trash, i18n_full");
         }
         function cerrarBienvenida() {
             document.getElementById('m-welcome').classList.add('hidden');
