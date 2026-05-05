@@ -103,7 +103,6 @@ class Api:
         cron_activo = config.get("cron", {}).get("activo", False)
         
         if current_window:
-            # Si Fantasma O Cron están activos, ocultamos en vez de cerrar
             if fantasma_activo_ui or fantasma_activo or cron_activo:
                 current_window.hide()
             else:
@@ -163,14 +162,12 @@ class Api:
         guardar_config_usuario(config)
         return True
 
-    # --- NUEVAS FUNCIONES: CRON ---
     def guardar_cron(self, activo, ruta, hora):
         config = cargar_config_usuario()
         config["cron"] = {"activo": activo, "ruta": ruta.strip('"').strip("'"), "hora": hora}
         guardar_config_usuario(config)
         return True
 
-    # --- NUEVAS FUNCIONES: CAZA-DUPLICADOS (HASH) ---
     def buscar_duplicados(self, ruta):
         try:
             ruta = ruta.strip('"').strip("'")
@@ -180,7 +177,6 @@ class Api:
             for f in os.listdir(ruta):
                 p = os.path.join(ruta, f)
                 if os.path.isfile(p) and not f.startswith('.'):
-                    # Leemos los archivos en fragmentos de 64kb para no saturar la RAM si son grandes
                     hasher = hashlib.md5()
                     with open(p, 'rb') as afile:
                         buf = afile.read(65536)
@@ -191,12 +187,10 @@ class Api:
                     if h in hashes: hashes[h].append(f)
                     else: hashes[h] = [f]
             
-            # Filtramos solo los que tienen más de 1 coincidencia
             dups = {k: v for k, v in hashes.items() if len(v) > 1}
             return {"status": "success", "duplicados": dups}
         except Exception as e: return {"status": "error", "message": str(e)}
 
-    # --- NUEVAS FUNCIONES: PAPELERA DE RECICLAJE INTERNA ---
     def enviar_a_papelera(self, ruta, archivos):
         try:
             ruta = ruta.strip('"').strip("'")
@@ -241,7 +235,6 @@ class Api:
             return {"status": "error", "message": "Archivo no encontrado"}
         except Exception as e: return {"status": "error", "message": str(e)}
 
-
     def seleccionar_carpeta(self):
         global current_window
         if current_window:
@@ -256,15 +249,18 @@ class Api:
             guardar_config_usuario(config)
         return config["stats"]
 
-    def analizar_archivos(self, ruta, usar_ia, contexto_ia=""):
+    # NUEVO: Se agregó parámetro leer_contenido
+    def analizar_archivos(self, ruta, usar_ia, contexto_ia="", leer_contenido=False):
         try:
             ruta = ruta.strip('"').strip("'")
             if not os.path.exists(ruta): return {"status": "error", "message": "La ruta ingresada no existe."}
             archivos = [f for f in os.listdir(ruta) if os.path.isfile(os.path.join(ruta, f)) and not f.startswith('.')]
             if not archivos: return {"status": "error", "message": "No hay archivos sueltos en esa carpeta."}
+            
             config_user = cargar_config_usuario()
             reglas_user = config_user.get("rules", {})
             plan = {}
+            
             if not usar_ia:
                 for archivo in archivos:
                     _, ext = os.path.splitext(archivo.lower())
@@ -277,9 +273,37 @@ class Api:
                 api_key = config_user.get("api_key", "")
                 if not api_key: return {"status": "error", "message": "No has configurado tu API Key."}
                 client = Groq(api_key=api_key)
+                
                 prompt = "Clasifica estos archivos en carpetas lógicas. "
                 if contexto_ia: prompt += f" REGLA ESPECÍFICA DEL USUARIO: {contexto_ia}. "
-                prompt += f" Devuelve ÚNICAMENTE un objeto JSON plano (sin anidar). Clave: Nombre del archivo, Valor: Nombre de la carpeta sugerida. Archivos: {str(archivos)}"
+                
+                # --- NUEVO: ANALIZADOR PROFUNDO DE CONTENIDO (DEEP SCAN) ---
+                datos_archivos = []
+                text_extensions = {'.txt', '.md', '.csv', '.json', '.html', '.css', '.js', '.py', '.log', '.xml', '.yml', '.yaml', '.ini', '.env', '.sh', '.bat'}
+                
+                for archivo in archivos:
+                    _, ext = os.path.splitext(archivo.lower())
+                    muestra = ""
+                    
+                    if leer_contenido and ext in text_extensions:
+                        try:
+                            ruta_archivo = os.path.join(ruta, archivo)
+                            # errors='ignore' previene crasheos con archivos raros
+                            with open(ruta_archivo, 'r', encoding='utf-8', errors='ignore') as f:
+                                texto = f.read(400).strip() # Extraemos los primeros 400 caracteres
+                                if texto:
+                                    # Limpiamos saltos de línea y tabulaciones para no romper el prompt de la IA
+                                    texto_limpio = " ".join(texto.split())
+                                    muestra = f" (Muestra del contenido interno: '{texto_limpio[:350]}...')"
+                        except Exception:
+                            pass # Si falla al abrir, simplemente lo ignoramos y pasamos solo el nombre
+                            
+                    datos_archivos.append(f"'{archivo}'{muestra}")
+                
+                # Ensamblamos la lista final para Groq
+                archivos_str = " | ".join(datos_archivos)
+                prompt += f" Devuelve ÚNICAMENTE un objeto JSON plano (sin anidar). Clave: Nombre del archivo, Valor: Nombre de la carpeta sugerida. Archivos: {archivos_str}"
+                
                 chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
                     model="llama-3.1-8b-instant", temperature=0.1, max_tokens=4096,
@@ -288,7 +312,10 @@ class Api:
                 plan_bruto = json.loads(chat_completion.choices[0].message.content)
                 if len(plan_bruto) == 1 and isinstance(list(plan_bruto.values())[0], dict): plan_bruto = list(plan_bruto.values())[0]
                 plan = {str(k): str(v) for k, v in plan_bruto.items()}
-                return {"status": "success", "plan": plan, "modo": "IA (Llama 3.1)"}
+                
+                # Indicamos en la UI qué modo se usó
+                modo_str = "IA + Deep Scan" if leer_contenido else "IA (Llama 3.1)"
+                return {"status": "success", "plan": plan, "modo": modo_str}
         except Exception as e: return {"status": "error", "message": str(e)}
 
     def sugerir_nombres(self, ruta):
@@ -509,7 +536,6 @@ def cron_loop():
                 hora_actual = now.strftime("%H:%M")
                 fecha_actual = now.strftime("%Y-%m-%d")
                 
-                # Ejecutar solo 1 vez al día a la hora exacta
                 if hora_actual == cron.get("hora") and last_run_date != fecha_actual:
                     ruta = cron.get("ruta")
                     if os.path.exists(ruta):
@@ -534,7 +560,7 @@ def cron_loop():
                     last_run_date = fecha_actual
                     tray_queue.put(("toast", f"Cron: Limpieza automática completada en {ruta}"))
         except Exception: pass
-        time.sleep(30) # Comprueba cada 30 segundos
+        time.sleep(30)
 
 
 threading.Thread(target=fantasma_loop, daemon=True).start()
@@ -579,7 +605,7 @@ if __name__ == '__main__':
             return True
 
     current_window = webview.create_window(
-        'OrgPro v1.5 [Arch Edition]',
+        'OrgPro v1.6 [Content Analyzer]',
         HTML_PATH,
         js_api=api_instance,
         width=900,

@@ -107,7 +107,6 @@
         .dup-group { border: 1px solid var(--border-light); padding: 8px; border-radius: 4px; margin-bottom: 10px; background: rgba(0,0,0,0.1); }
         .dup-item { display: flex; align-items: center; gap: 10px; padding: 4px; border-bottom: 1px dashed var(--border-light); }
         
-        /* Estilos Changelog */
         .changelog-item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-light); }
         .changelog-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .changelog-title { display: flex; align-items: center; gap: 8px; color: var(--accent); font-weight: bold; margin-bottom: 5px; }
@@ -122,10 +121,9 @@
                     OrgPro
                 </span>
                 
-                <!-- NUEVO: Botón Changelog v1.5 -->
-                <span class="mod" title="Novedades v1.5" onclick="mostrarChangelog()" style="border: 1px solid var(--accent); color: var(--accent);">
+                <span class="mod" title="Novedades v1.6" onclick="mostrarChangelog()" style="border: 1px solid var(--accent); color: var(--accent);">
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    <span data-i18n="nav_news">v1.5</span>
+                    <span data-i18n="nav_news">v1.6</span>
                 </span>
 
                 <span class="mod" title="Guía de Uso" onclick="toggleInfo()">
@@ -216,7 +214,13 @@
                         <span data-i18n="lbl_ia">IA Scanner (Groq)</span>
                         <label class="switch"><input type="checkbox" id="toggle-ia"><span class="slider"></span></label>
                     </div>
-                    <div class="switch-container">
+                    <!-- NUEVO SWITCH DE DEEP SCAN (CONTENIDO) -->
+                    <div class="switch-container" id="deep-scan-container" style="padding-left: 15px; border-left: 2px solid var(--accent); margin-top: -4px; opacity: 0.5;">
+                        <span data-i18n="lbl_deep" style="font-size: 0.75rem; color: var(--text-muted);">↳ Deep Scan (Leer interior)</span>
+                        <label class="switch" style="transform: scale(0.8);"><input type="checkbox" id="toggle-deep" disabled><span class="slider"></span></label>
+                    </div>
+                    
+                    <div class="switch-container" style="margin-top: 8px;">
                         <span data-i18n="lbl_ghost">Watchdog (Fantasma)</span>
                         <label class="switch"><input type="checkbox" id="toggle-fantasma" onchange="toggleModoFantasma()"><span class="slider"></span></label>
                     </div>
@@ -396,21 +400,26 @@
         </div>
     </div>
 
-    <!-- NUEVO: Modal Changelog (Novedades v1.5) -->
+    <!-- Modal Changelog (Novedades v1.6) -->
     <div id="m-changelog" class="modal hidden">
         <div class="modal-c" style="max-width: 500px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px;">
                 <h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
                     <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    <span data-i18n="clog_title">Novedades v1.5</span>
+                    <span data-i18n="clog_title">Novedades v1.6</span>
                 </h2>
                 <button onclick="mostrarChangelog()" style="background: none; border: none; color: #f7768e; cursor: pointer; font-size: 1.2rem;">✖</button>
             </div>
             
             <div class="info-card" style="max-height: 50vh; overflow-y: auto;">
                 <div class="changelog-item">
+                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> <span data-i18n="clog_deep_title">Analizador de Contenido (Deep Scan)</span></div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_deep_desc">OrgPro ahora puede abrir tus archivos de texto, documentos y código para leer su interior y enviarle el contexto a la IA. Organización ultra-precisa aunque el archivo no tenga un nombre claro.</p>
+                </div>
+
+                <div class="changelog-item">
                     <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> <span data-i18n="clog_dup_title">Caza-Duplicados (Hash MD5)</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_dup_desc">Nuevo motor que escanea el contenido real de los archivos para encontrar duplicados exactos, permitiéndote limpiarlos con un clic.</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_dup_desc">Escanea el contenido real de los archivos para encontrar duplicados exactos, permitiéndote limpiarlos con un clic.</p>
                 </div>
                 
                 <div class="changelog-item">
@@ -421,21 +430,6 @@
                 <div class="changelog-item">
                     <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> <span data-i18n="clog_cron_title">Auto-Limpieza (Cron)</span></div>
                     <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_cron_desc">Configura una hora exacta. OrgPro organizará tu carpeta automáticamente todos los días en segundo plano.</p>
-                </div>
-
-                <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> <span data-i18n="clog_ai_title">Instrucciones IA (Prompts)</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_ai_desc">Toma el control de la Inteligencia Artificial diciéndole exactamente cómo quieres agrupar tus archivos antes del análisis.</p>
-                </div>
-
-                <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg> <span data-i18n="clog_undo_title">Deshacer Selectivo</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_undo_desc">El historial ahora permite revertir archivos uno por uno sin afectar el resto de la organización.</p>
-                </div>
-
-                <div class="changelog-item">
-                    <div class="changelog-title"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> <span data-i18n="clog_lang_title">Soporte Multi-Idioma</span></div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="clog_lang_desc">Nueva arquitectura interna que soporta cambio en tiempo real entre Español e Inglés (Ajustes).</p>
                 </div>
             </div>
 
@@ -462,7 +456,7 @@
     
     <div id="m-welcome" class="modal hidden">
         <div class="modal-c" style="max-width:400px;">
-            <h3 style="color:var(--accent);" data-i18n="splash_title">OrgPro 1.5 - Arch Edition</h3>
+            <h3 style="color:var(--accent);" data-i18n="splash_title">OrgPro 1.6 - Content Analyzer</h3>
             <p data-i18n="splash_sub">Interfaz modular activada.</p>
             <div id="welcome-api-alert" class="hidden" style="color:#f7768e; font-size:0.8rem; margin:10px 0;">[WARN] Requiere API Key en Config para funciones IA.</div>
             <button class="btn btn-full" onclick="cerrarBienvenida()" data-i18n="splash_btn">Iniciar Sesión (root)</button>
@@ -472,14 +466,14 @@
     <script>
         const i18n = {
             es: {
-                nav_info: "Info", nav_config: "Config", nav_stats: "Stats", nav_trash: "Papelera", nav_news: "v1.5",
+                nav_info: "Info", nav_config: "Config", nav_stats: "Stats", nav_trash: "Papelera", nav_news: "v1.6",
                 term_title: "[Terminal / Análisis]", term_wait: "Esperando entrada...",
                 ph_path: "Ruta: C:\\Usuarios\\TuNombre\\Descargas (o arrastra aquí)",
                 ph_ai: "Instrucciones IA (Ej: Agrupa por cliente)...",
                 btn_ianame: "IA Name", btn_analyze: "Analizar", btn_dups: "Caza-Duplicados",
                 li_drop: "~/$ Arrastre un directorio para comenzar...",
                 prog_op: "Progreso de Operación", btn_exec: "Ejecutar Organización",
-                daem_title: "[Daemons / Servicios]", lbl_ia: "IA Scanner (Groq)",
+                daem_title: "[Daemons / Servicios]", lbl_ia: "IA Scanner (Groq)", lbl_deep: "↳ Deep Scan (Leer interior)",
                 lbl_ghost: "Watchdog (Fantasma)", lbl_cron: "Cron (Auto-Limpieza)", lbl_notif: "Notificaciones Sys",
                 lbl_rules: "Rutas de Reglas Activas:", sys_title: "[System Log]",
                 conf_title: "/etc/orgpro/config", conf_lang: "Idioma del Sistema:",
@@ -499,8 +493,9 @@
                 guide_api: "Regístrate en <a href='#' style='color: var(--accent); text-decoration: none; font-weight: bold;'>console.groq.com</a>, genera una key y pégala en Ajustes (⚙️).",
                 guide_rules: "En Ajustes (⚙️) añade reglas que tienen prioridad. Ej: <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>.pdf</code> ➔ <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>Universidad</code>.",
                 btn_understood: "Entendido", btn_undo: "Deshacer Todo", btn_enjoy: "¡Genial!",
-                splash_title: "OrgPro 1.5 - Arch Edition", splash_sub: "Interfaz modular activada.", splash_btn: "Iniciar Sesión (root)",
-                clog_title: "Novedades v1.5",
+                splash_title: "OrgPro 1.6 - Content Analyzer", splash_sub: "Interfaz modular activada.", splash_btn: "Iniciar Sesión (root)",
+                clog_title: "Novedades v1.6",
+                clog_deep_title: "Analizador de Contenido (Deep Scan)", clog_deep_desc: "OrgPro ahora puede abrir tus archivos de texto, documentos y código para leer su interior y enviarle el contexto a la IA. Organización ultra-precisa aunque el archivo no tenga un nombre claro.",
                 clog_dup_title: "Caza-Duplicados (Hash MD5)", clog_dup_desc: "Nuevo motor que escanea el contenido real de los archivos para encontrar duplicados exactos, permitiéndote limpiarlos con un clic.",
                 clog_trash_title: "Papelera Segura", clog_trash_desc: "Los archivos duplicados ya no se borran permanentemente. Se envían a un entorno seguro donde puedes restaurarlos en cualquier momento.",
                 clog_cron_title: "Auto-Limpieza (Cron)", clog_cron_desc: "Configura una hora exacta. OrgPro organizará tu carpeta automáticamente todos los días en segundo plano.",
@@ -509,14 +504,14 @@
                 clog_lang_title: "Soporte Multi-Idioma", clog_lang_desc: "Nueva arquitectura interna que soporta cambio en tiempo real entre Español e Inglés (Ajustes)."
             },
             en: {
-                nav_info: "Help", nav_config: "Settings", nav_stats: "Stats", nav_trash: "Trash", nav_news: "v1.5",
+                nav_info: "Help", nav_config: "Settings", nav_stats: "Stats", nav_trash: "Trash", nav_news: "v1.6",
                 term_title: "[Terminal / Analysis]", term_wait: "Waiting for input...",
                 ph_path: "Path: C:\\Users\\Name\\Downloads (or drop here)",
                 ph_ai: "AI Rules (Ex: Group by client name)...",
                 btn_ianame: "AI Name", btn_analyze: "Analyze", btn_dups: "Find Duplicates",
                 li_drop: "~/$ Drop a directory to start...",
                 prog_op: "Operation Progress", btn_exec: "Execute Organization",
-                daem_title: "[Daemons / Services]", lbl_ia: "AI Scanner (Groq)",
+                daem_title: "[Daemons / Services]", lbl_ia: "AI Scanner (Groq)", lbl_deep: "↳ Deep Scan (Read inside)",
                 lbl_ghost: "Watchdog (Ghost)", lbl_cron: "Cron (Auto-Clean)", lbl_notif: "Sys Notifications",
                 lbl_rules: "Active Rule Paths:", sys_title: "[System Log]",
                 conf_title: "/etc/orgpro/config", conf_lang: "System Language:",
@@ -536,8 +531,9 @@
                 guide_api: "Get your key at <a href='#' style='color: var(--accent); text-decoration: none; font-weight: bold;'>console.groq.com</a> and paste it in Settings (⚙️).",
                 guide_rules: "In Settings (⚙️) add custom priority rules. Ex: <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>.pdf</code> ➔ <code style='background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px;'>University</code>.",
                 btn_understood: "Understood", btn_undo: "Undo All", btn_enjoy: "Awesome!",
-                splash_title: "OrgPro 1.5 - Arch Edition", splash_sub: "Modular interface activated.", splash_btn: "Login (root)",
-                clog_title: "What's new in v1.5",
+                splash_title: "OrgPro 1.6 - Content Analyzer", splash_sub: "Modular interface activated.", splash_btn: "Login (root)",
+                clog_title: "What's new in v1.6",
+                clog_deep_title: "Content Analyzer (Deep Scan)", clog_deep_desc: "OrgPro can now open your text files, documents, and code to read inside and send context to the AI. Ultra-precise organization even if the file lacks a clear name.",
                 clog_dup_title: "Smart Deduplicator (MD5 Hash)", clog_dup_desc: "New engine scans actual file contents for exact duplicates, allowing 1-click cleanups.",
                 clog_trash_title: "Safe Trash", clog_trash_desc: "Duplicate files are no longer permanently deleted. They go to a safe environment where you can restore them.",
                 clog_cron_title: "Auto-Clean (Cron)", clog_cron_desc: "Set an exact time. OrgPro will automatically organize your folder every day in the background.",
@@ -709,16 +705,18 @@
             }
         }
 
+        // --- NUEVO: Logica para pasar leerContenido al backend ---
         async function analizar() {
             const ruta = document.getElementById('ruta').value.trim();
             const usarIA = document.getElementById('toggle-ia').checked;
+            const leerContenido = document.getElementById('toggle-deep').checked;
             const contexto_ia = document.getElementById('ai-prompt').value.trim(); 
 
             if (!ruta) { agregarLog("Error: Ruta vacía", "error"); return; }
             statusEl.innerText = "Analizando...";
             agregarLog(`Iniciando análisis en ${ruta}...`);
             
-            const res = await window.pywebview.api.analizar_archivos(ruta, usarIA, contexto_ia);
+            const res = await window.pywebview.api.analizar_archivos(ruta, usarIA, contexto_ia, leerContenido);
             
             if (res.status === "success") {
                 planActual = res.plan;
@@ -755,7 +753,6 @@
             }
         }
 
-        // --- FUNCIONES CAZA-DUPLICADOS ---
         async function buscarDuplicados() {
             const ruta = document.getElementById('ruta').value.trim();
             if (!ruta) { agregarLog("Error: Ruta requerida para buscar duplicados.", "error"); return; }
@@ -769,7 +766,7 @@
                 let found = 0;
 
                 for (const [hash, archivos] of Object.entries(res.duplicados)) {
-                    found += (archivos.length - 1); // Contamos cuántos sobran
+                    found += (archivos.length - 1); 
                     
                     let groupHTML = `<div class="dup-group"><div style="font-size:0.7rem; color:var(--accent); margin-bottom:5px;">Hash: ${hash.substring(0,8)}...</div>`;
                     
@@ -815,7 +812,6 @@
             }
         }
 
-        // --- FUNCIONES PAPELERA DE RECICLAJE ---
         async function verPapelera() {
             const ruta = document.getElementById('ruta').value.trim();
             if (!ruta) { agregarLog("Aviso: Indica una ruta para ver su papelera.", "error"); return; }
@@ -826,7 +822,7 @@
             
             if (res.status === "success" && res.archivos.length > 0) {
                 res.archivos.forEach(arch => {
-                    const safepath = arch.replace(/'/g, "\\'"); // Escapar comillas
+                    const safepath = arch.replace(/'/g, "\\'"); 
                     list.innerHTML += `<li style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
                         <span style="flex-grow:1; overflow:hidden; text-overflow:ellipsis;">${arch}</span>
                         <button class="btn" style="padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; border-color:#9ece6a; color:#9ece6a;" onclick="restaurarDePapelera('${safepath}')" title="Restaurar Archivo">↩</button>
@@ -855,11 +851,10 @@
             const res = await window.pywebview.api.restaurar_papelera(ruta, archivo);
             if(res.status === "success") {
                 agregarLog(`Archivo restaurado: ${archivo}`, "success");
-                verPapelera(); // Recargar lista
+                verPapelera(); 
             }
         }
 
-        // --- FUNCIONES CRON SCHEDULER ---
         async function toggleModoCron() {
             const act = document.getElementById('toggle-cron').checked;
             const settings = document.getElementById('cron-settings');
@@ -1053,6 +1048,20 @@
             }
         });
 
+        // --- NUEVO: Lógica visual del toggle Deep Scan ---
+        document.getElementById('toggle-ia').addEventListener('change', function() {
+            const deepScanContainer = document.getElementById('deep-scan-container');
+            const deepScanToggle = document.getElementById('toggle-deep');
+            if (this.checked) {
+                deepScanContainer.style.opacity = '1';
+                deepScanToggle.disabled = false;
+            } else {
+                deepScanContainer.style.opacity = '0.5';
+                deepScanToggle.checked = false;
+                deepScanToggle.disabled = true;
+            }
+        });
+
         async function checkStartup() {
             const config = await window.pywebview.api.obtener_config();
             
@@ -1082,8 +1091,8 @@
             }
             renderRulesList(config.rules || {});
             
-            agregarLog("System Boot: OrgPro v1.5-arch");
-            agregarLog("Módulos: IA, Watchdog, Cron, Hash, Trash, i18n");
+            agregarLog("System Boot: OrgPro v1.6 (Content Analyzer)");
+            agregarLog("Módulos: Deep Scan, IA, Watchdog, Cron, Hash, Trash");
         }
         function cerrarBienvenida() {
             document.getElementById('m-welcome').classList.add('hidden');
@@ -1097,4 +1106,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

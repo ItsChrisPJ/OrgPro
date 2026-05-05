@@ -10,8 +10,8 @@ DefaultDirName={autopf}\OrgPro
 DisableProgramGroupPage=yes
 
 ; --- 3. SALIDA DEL INSTALADOR ---
-; Salimos de la carpeta setup y creamos el instalador en la raíz
-OutputDir=..\InstaladorFinal
+; El punto (.) indica que se guarde en la misma carpeta que este archivo (setup)
+OutputDir=.
 OutputBaseFilename=Instalar_OrgPro_v1.5
 ; Salimos de setup y entramos a assets
 SetupIconFile=..\assets\icono.ico
