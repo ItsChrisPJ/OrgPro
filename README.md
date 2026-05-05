@@ -36,8 +36,4 @@
 Para usar las funciones avanzadas de renombrado y análisis profundo:
 1. Regístrate de forma gratuita en [console.groq.com](https://console.groq.com/keys).
 2. Genera tu API Key.
-3. Abre OrgPro, haz clic en el botón de **Config (⚙️)** en la barra superior y pega tu clave. 
-*(Nota: Tu clave es privada y se guarda únicamente de forma local en tu computadora).*
-
----
-<p align="center"><b>Desarrollado con ☕ por Chris</b></p>
+3. Abre OrgPro, haz clic
