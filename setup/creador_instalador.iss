@@ -1,7 +1,7 @@
 [Setup]
 ; --- 1. INFO BÁSICA ---
 AppName=OrgPro
-AppVersion=1.5
+AppVersion=1.6
 AppPublisher=Software Por Chris
 AppCopyright=Copyright (C) 2026 Chris
 
@@ -12,7 +12,7 @@ DisableProgramGroupPage=yes
 ; --- 3. SALIDA DEL INSTALADOR ---
 ; El punto (.) indica que se guarde en la misma carpeta que este archivo (setup)
 OutputDir=.
-OutputBaseFilename=Instalar_OrgPro_v1.5
+OutputBaseFilename=Setup_OrgPro_v1.6
 ; Salimos de setup y entramos a assets
 SetupIconFile=..\assets\icono.ico
 
