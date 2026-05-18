@@ -12,13 +12,16 @@ import webview
 from groq import Groq
 from plyer import notification
 
-try:
-    import pystray
-    from pystray import MenuItem as item
-    from PIL import Image
-    HAS_TRAY = True
-except ImportError:
-    HAS_TRAY = False
+# === CONFIGURACIÓN DEL TRAY (SOLO WINDOWS) ===
+HAS_TRAY = False
+if platform.system() == "Windows":
+    try:
+        import pystray
+        from pystray import MenuItem as item
+        from PIL import Image
+        HAS_TRAY = True
+    except ImportError:
+        HAS_TRAY = False
 
 # === PATHS ===
 if getattr(sys, 'frozen', False):
