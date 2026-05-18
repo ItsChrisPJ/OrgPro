@@ -44,18 +44,28 @@ else:  # Linux (Arch/Hyprland) y derivados
 os.makedirs(appdata_dir, exist_ok=True)
 CONFIG_FILE = os.path.join(appdata_dir, "custom_config.json")
 
+# === MEGA DICCIONARIO MULTIPLATAFORMA ===
 EXTENSIONES_CONOCIDAS = {
+    # Imágenes y Diseño
     '.jpg': 'Imágenes', '.jpeg': 'Imágenes', '.png': 'Imágenes', '.gif': 'Imágenes',
     '.webp': 'Imágenes', '.bmp': 'Imágenes', '.tiff': 'Imágenes', '.tif': 'Imágenes',
-    '.heic': 'Imágenes', '.raw': 'Imágenes RAW', '.cr2': 'Imágenes RAW', '.nef': 'Imágenes RAW',
-    '.svg': 'Vectores', '.eps': 'Vectores', '.fig': 'Diseño UI', '.sketch': 'Diseño UI',
+    '.heic': 'Imágenes', '.ico': 'Imágenes',
+    '.raw': 'Imágenes RAW', '.cr2': 'Imágenes RAW', '.nef': 'Imágenes RAW',
+    '.svg': 'Vectores', '.eps': 'Vectores', 
+    '.fig': 'Diseño UI', '.sketch': 'Diseño UI',
     '.psd': 'Diseño (Adobe)', '.ai': 'Diseño (Adobe)', '.indd': 'Diseño (Adobe)',
     '.blend': 'Modelos 3D', '.obj': 'Modelos 3D', '.fbx': 'Modelos 3D', '.stl': 'Modelos 3D (Impresión)',
-    '.pdf': 'Documentos', '.doc': 'Documentos (Word)', '.docx': 'Documentos (Word)',
-    '.txt': 'Notas de Texto', '.rtf': 'Notas de Texto', '.md': 'Notas de Texto (Markdown)',
+    
+    # Documentos y Ofimática (Windows, Linux, Apple)
+    '.pdf': 'Documentos', '.doc': 'Documentos (Word)', '.docx': 'Documentos (Word)', '.odt': 'Documentos (OpenOffice)',
+    '.pages': 'Documentos (Apple)', 
+    '.txt': 'Notas de Texto', '.rtf': 'Notas de Texto', '.md': 'Notas de Texto (Markdown)', '.tex': 'Documentos (LaTeX)',
     '.epub': 'Libros Electrónicos', '.mobi': 'Libros Electrónicos', '.azw3': 'Libros Electrónicos',
-    '.xls': 'Hojas de Cálculo', '.xlsx': 'Hojas de Cálculo', '.csv': 'Bases de Datos (CSV)',
-    '.ppt': 'Presentaciones', '.pptx': 'Presentaciones', '.key': 'Presentaciones',
+    '.xls': 'Hojas de Cálculo', '.xlsx': 'Hojas de Cálculo', '.csv': 'Bases de Datos (CSV)', '.ods': 'Hojas de Cálculo (OpenOffice)',
+    '.numbers': 'Hojas de Cálculo (Apple)',
+    '.ppt': 'Presentaciones', '.pptx': 'Presentaciones', '.odp': 'Presentaciones (OpenOffice)', '.key': 'Presentaciones (Apple)',
+    
+    # Audio y Video
     '.mp3': 'Música', '.wav': 'Audio de Alta Calidad', '.flac': 'Audio de Alta Calidad',
     '.ogg': 'Audio (Otros)', '.m4a': 'Música', '.aac': 'Música',
     '.als': 'Proyectos Musicales (Ableton)', '.flp': 'Proyectos Musicales (FL Studio)',
@@ -63,23 +73,42 @@ EXTENSIONES_CONOCIDAS = {
     '.wmv': 'Videos', '.webm': 'Videos', '.flv': 'Videos',
     '.srt': 'Subtítulos', '.ass': 'Subtítulos', '.vtt': 'Subtítulos',
     '.prproj': 'Proyectos de Video (Premiere)', '.aep': 'Proyectos de Video (After Effects)',
+    
+    # Comprimidos (Windows, Linux, macOS)
     '.zip': 'Comprimidos', '.rar': 'Comprimidos', '.7z': 'Comprimidos',
-    '.tar': 'Comprimidos', '.gz': 'Comprimidos', '.iso': 'Imágenes de Disco',
-    '.exe': 'Instaladores y Programas', '.msi': 'Instaladores y Programas',
-    '.apk': 'Aplicaciones (Android)', '.dmg': 'Aplicaciones (Mac)',
-    '.deb': 'Instaladores y Programas', '.rpm': 'Instaladores y Programas',
-    '.bat': 'Scripts de Sistema', '.sh': 'Scripts de Sistema', '.ps1': 'Scripts de Sistema',
-    '.dll': 'Archivos de Sistema', '.sys': 'Archivos de Sistema', '.ini': 'Configuraciones',
-    '.lnk': 'Accesos Directos',
+    '.tar': 'Comprimidos', '.gz': 'Comprimidos', '.tar.gz': 'Comprimidos', '.tgz': 'Comprimidos',
+    '.bz2': 'Comprimidos', '.tar.bz2': 'Comprimidos', '.xz': 'Comprimidos', '.tar.xz': 'Comprimidos',
+    '.iso': 'Imágenes de Disco', '.cab': 'Comprimidos (Sistema)',
+    
+    # Ejecutables e Instaladores Multiplataforma
+    '.exe': 'Instaladores y Programas', '.msi': 'Instaladores y Programas', '.msu': 'Instaladores y Programas',
+    '.apk': 'Aplicaciones (Android)', 
+    '.dmg': 'Instaladores y Programas (Mac)', '.pkg': 'Instaladores y Programas (Mac)',
+    '.deb': 'Instaladores y Programas (Linux)', '.rpm': 'Instaladores y Programas (Linux)',
+    '.appimage': 'Programas Portables (Linux)', '.run': 'Instaladores y Programas (Linux)', '.bin': 'Ejecutables (Binarios)',
+    
+    # Scripts y Sistema
+    '.bat': 'Scripts de Sistema', '.cmd': 'Scripts de Sistema', '.sh': 'Scripts de Sistema (Bash)', '.ps1': 'Scripts de Sistema (PowerShell)',
+    '.dll': 'Archivos de Sistema', '.sys': 'Archivos de Sistema', 
+    '.ini': 'Configuraciones', '.conf': 'Configuraciones', '.cfg': 'Configuraciones', '.plist': 'Configuraciones (Apple)', '.reg': 'Configuraciones (Registro)',
+    '.lnk': 'Accesos Directos', '.desktop': 'Accesos Directos (Linux)',
+    '.log': 'Logs de Sistema',
+    
+    # Desarrollo y Código Web
     '.html': 'Código Web', '.css': 'Código Web', '.js': 'Código Web',
     '.ts': 'Código Web', '.jsx': 'Código Web', '.tsx': 'Código Web', '.php': 'Código Web',
-    '.py': 'Código (Python)', '.java': 'Código', '.c': 'Código', '.cpp': 'Código',
-    '.cs': 'Código (C#)', '.go': 'Código', '.rs': 'Código', '.rb': 'Código',
+    '.py': 'Código (Python)', '.java': 'Código (Java)', '.c': 'Código (C)', '.cpp': 'Código (C++)',
+    '.cs': 'Código (C#)', '.go': 'Código (Go)', '.rs': 'Código (Rust)', '.rb': 'Código (Ruby)',
+    '.swift': 'Código (Swift)', '.kt': 'Código (Kotlin)',
+    
+    # Datos, Configuración Dev y Bases de Datos
     '.json': 'Datos y Configuración', '.xml': 'Datos y Configuración',
-    '.yaml': 'Datos y Configuración', '.yml': 'Datos y Configuración', '.env': 'Datos y Configuración',
+    '.yaml': 'Datos y Configuración', '.yml': 'Datos y Configuración', '.env': 'Variables de Entorno',
+    '.toml': 'Datos y Configuración', '.lock': 'Archivos Lock (Dependencias)',
     '.sql': 'Bases de Datos', '.db': 'Bases de Datos', '.sqlite': 'Bases de Datos',
-    '.ttf': 'Fuentes Tipográficas', '.otf': 'Fuentes Tipográficas', '.woff': 'Fuentes Tipográficas',
-    '.ttc': 'Fuentes Tipográficas'
+    
+    # Tipografías
+    '.ttf': 'Fuentes Tipográficas', '.otf': 'Fuentes Tipográficas', '.woff': 'Fuentes Tipográficas', '.ttc': 'Fuentes Tipográficas'
 }
 
 current_window = None
@@ -253,7 +282,6 @@ class Api:
     def seleccionar_carpeta(self):
         global current_window
         if current_window:
-            # CORRECCIÓN DE DEPRECACIÓN: Se cambia webview.FOLDER_DIALOG por webview.FileDialog.FOLDER
             result = current_window.create_file_dialog(webview.FileDialog.FOLDER, allow_multiple=False)
             if result: return result[0]
         return None
@@ -279,7 +307,15 @@ class Api:
             
             if not usar_ia:
                 for archivo in archivos:
-                    _, ext = os.path.splitext(archivo.lower())
+                    # Lógica mejorada para extensiones compuestas (.tar.gz, etc)
+                    lower_arch = archivo.lower()
+                    ext = ""
+                    for key in EXTENSIONES_CONOCIDAS.keys():
+                        if lower_arch.endswith(key) and len(key) > len(ext):
+                            ext = key
+                    if not ext:
+                        _, ext = os.path.splitext(lower_arch)
+                        
                     if ext in ['.crdownload', '.part', '.tmp', '.download']: continue
                     if ext in reglas_user: plan[archivo] = reglas_user[ext]
                     elif ext in EXTENSIONES_CONOCIDAS: plan[archivo] = EXTENSIONES_CONOCIDAS[ext]
@@ -290,8 +326,7 @@ class Api:
                 if not api_key: return {"status": "error", "message": "No has configurado tu API Key."}
                 client = Groq(api_key=api_key)
                 
-                # OPTIMIZACIÓN PROMPT: IA consciente de formatos Unix/Linux e idioma objetivo
-                prompt = f"Clasifica estos archivos en carpetas lógicas. Ten en cuenta que el usuario está en un sistema {OS_NAME} y el idioma de salida de los nombres de carpetas debe ser obligatoriamente en {'Español' if idioma == 'es' else 'Inglés'}. Sé explícito clasificando formatos del sistema como .deb, .rpm o .iso. "
+                prompt = f"Clasifica estos archivos en carpetas lógicas. Ten en cuenta que el usuario está en un sistema {OS_NAME} y el idioma de salida de los nombres de carpetas debe ser obligatoriamente en {'Español' if idioma == 'es' else 'Inglés'}. Sé explícito clasificando formatos de sistema como .deb, .rpm, .tar.gz o .iso. "
                 
                 temp = 0.1
                 if creatividad == "estricto":
@@ -304,7 +339,7 @@ class Api:
                 if contexto_ia: prompt += f" REGLA ESPECÍFICA DEL USUARIO: {contexto_ia}. "
                 
                 datos_archivos = []
-                text_extensions = {'.txt', '.md', '.csv', '.json', '.html', '.css', '.js', '.py', '.log', '.xml', '.yml', '.yaml', '.ini', '.env', '.sh', '.bat'}
+                text_extensions = {'.txt', '.md', '.csv', '.json', '.html', '.css', '.js', '.py', '.log', '.xml', '.yml', '.yaml', '.ini', '.env', '.sh', '.bat', '.toml'}
                 
                 for archivo in archivos:
                     _, ext = os.path.splitext(archivo.lower())
@@ -516,12 +551,20 @@ def fantasma_loop():
                     config_user = cargar_config_usuario()
                     reglas_user = config_user.get("rules", {})
                     plan = {}
+                    idioma = config_user.get("language", "es")
                     for archivo in nuevos:
-                        _, ext = os.path.splitext(archivo.lower())
+                        lower_arch = archivo.lower()
+                        ext = ""
+                        for key in EXTENSIONES_CONOCIDAS.keys():
+                            if lower_arch.endswith(key) and len(key) > len(ext):
+                                ext = key
+                        if not ext:
+                            _, ext = os.path.splitext(lower_arch)
+                            
                         if ext in ['.crdownload', '.part', '.tmp', '.download']: continue
                         if ext in reglas_user: plan[archivo] = reglas_user[ext]
                         elif ext in EXTENSIONES_CONOCIDAS: plan[archivo] = EXTENSIONES_CONOCIDAS[ext]
-                        else: plan[archivo] = "Otros Archivos"
+                        else: plan[archivo] = "Otros Archivos" if idioma == "es" else "Other Files"
                     fallidos = set()
                     if plan:
                         historial_path = os.path.join(carpeta_fantasma, '.historial_org.json')
@@ -574,12 +617,20 @@ def cron_loop():
                         archivos = [f for f in os.listdir(ruta) if os.path.isfile(os.path.join(ruta, f)) and not f.startswith('.')]
                         reglas = config.get("rules", {})
                         plan = {}
+                        idioma = config.get("language", "es")
                         for a in archivos:
-                            _, ext = os.path.splitext(a.lower())
+                            lower_arch = a.lower()
+                            ext = ""
+                            for key in EXTENSIONES_CONOCIDAS.keys():
+                                if lower_arch.endswith(key) and len(key) > len(ext):
+                                    ext = key
+                            if not ext:
+                                _, ext = os.path.splitext(lower_arch)
+                                
                             if ext in ['.crdownload', '.part', '.tmp', '.download']: continue
                             if ext in reglas: plan[a] = reglas[ext]
                             elif ext in EXTENSIONES_CONOCIDAS: plan[a] = EXTENSIONES_CONOCIDAS[ext]
-                            else: plan[a] = "Otros Archivos"
+                            else: plan[a] = "Otros Archivos" if idioma == "es" else "Other Files"
                         
                         for a, c in plan.items():
                             r_origen = os.path.join(ruta, a)
@@ -686,4 +737,4 @@ if __name__ == '__main__':
         tray_icon = pystray.Icon("OrgPro", image, "OrgPro Daemon", menu=menu)
         threading.Thread(target=tray_icon.run, daemon=True).start()
 
-webview.start(debug=False)
+    webview.start(debug=False)
