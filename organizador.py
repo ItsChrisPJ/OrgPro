@@ -67,6 +67,7 @@ EXTENSIONES_CONOCIDAS = {
     '.tar': 'Comprimidos', '.gz': 'Comprimidos', '.iso': 'Imágenes de Disco',
     '.exe': 'Instaladores y Programas', '.msi': 'Instaladores y Programas',
     '.apk': 'Aplicaciones (Android)', '.dmg': 'Aplicaciones (Mac)',
+    '.deb': 'Instaladores y Programas', '.rpm': 'Instaladores y Programas',
     '.bat': 'Scripts de Sistema', '.sh': 'Scripts de Sistema', '.ps1': 'Scripts de Sistema',
     '.dll': 'Archivos de Sistema', '.sys': 'Archivos de Sistema', '.ini': 'Configuraciones',
     '.lnk': 'Accesos Directos',
@@ -77,7 +78,8 @@ EXTENSIONES_CONOCIDAS = {
     '.json': 'Datos y Configuración', '.xml': 'Datos y Configuración',
     '.yaml': 'Datos y Configuración', '.yml': 'Datos y Configuración', '.env': 'Datos y Configuración',
     '.sql': 'Bases de Datos', '.db': 'Bases de Datos', '.sqlite': 'Bases de Datos',
-    '.ttf': 'Fuentes Tipográficas', '.otf': 'Fuentes Tipográficas', '.woff': 'Fuentes Tipográficas'
+    '.ttf': 'Fuentes Tipográficas', '.otf': 'Fuentes Tipográficas', '.woff': 'Fuentes Tipográficas',
+    '.ttc': 'Fuentes Tipográficas'
 }
 
 current_window = None
@@ -251,7 +253,8 @@ class Api:
     def seleccionar_carpeta(self):
         global current_window
         if current_window:
-            result = current_window.create_file_dialog(webview.FOLDER_DIALOG, allow_multiple=False)
+            # CORRECCIÓN DE DEPRECACIÓN: Se cambia webview.FOLDER_DIALOG por webview.FileDialog.FOLDER
+            result = current_window.create_file_dialog(webview.FileDialog.FOLDER, allow_multiple=False)
             if result: return result[0]
         return None
 
@@ -287,7 +290,8 @@ class Api:
                 if not api_key: return {"status": "error", "message": "No has configurado tu API Key."}
                 client = Groq(api_key=api_key)
                 
-                prompt = "Clasifica estos archivos en carpetas lógicas. "
+                # OPTIMIZACIÓN PROMPT: IA consciente de formatos Unix/Linux e idioma objetivo
+                prompt = f"Clasifica estos archivos en carpetas lógicas. Ten en cuenta que el usuario está en un sistema {OS_NAME} y el idioma de salida de los nombres de carpetas debe ser obligatoriamente en {'Español' if idioma == 'es' else 'Inglés'}. Sé explícito clasificando formatos del sistema como .deb, .rpm o .iso. "
                 
                 temp = 0.1
                 if creatividad == "estricto":
