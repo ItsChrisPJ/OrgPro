@@ -6,6 +6,7 @@ import time
 import queue
 import threading
 import hashlib
+import platform
 from datetime import datetime
 import webview
 from groq import Groq
@@ -27,7 +28,16 @@ else:
 
 HTML_PATH = os.path.join(BASE_DIR, 'web', 'index.html')
 
-appdata_dir = os.path.join(os.environ['LOCALAPPDATA'], 'OrgPro')
+# --- DETECCIÓN MULTIPLATAFORMA DEL SISTEMA ---
+OS_NAME = platform.system()
+
+if OS_NAME == "Windows":
+    appdata_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~\\AppData\\Local')), 'OrgPro')
+elif OS_NAME == "Darwin":  # macOS (Teórico)
+    appdata_dir = os.path.join(os.path.expanduser('~/Library/Application Support'), 'OrgPro')
+else:  # Linux (Arch/Hyprland) y derivados
+    appdata_dir = os.path.join(os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config')), 'orgpro')
+
 os.makedirs(appdata_dir, exist_ok=True)
 CONFIG_FILE = os.path.join(appdata_dir, "custom_config.json")
 
@@ -604,7 +614,7 @@ def procesador_cola():
 threading.Thread(target=procesador_cola, daemon=True).start()
 
 if __name__ == '__main__':
-    print(">>> INICIANDO ORGANIZADOR INTELIGENTE PRO (pywebview)...")
+    print(f">>> INICIANDO ORGANIZADOR INTELIGENTE PRO EN {OS_NAME.upper()} (pywebview)...")
 
     def on_closing():
         global current_window, fantasma_activo, tray_icon
